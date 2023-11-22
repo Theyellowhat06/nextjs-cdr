@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable no-undef */
-import React from "react";
+import React, {useState, useEffect} from "react";
 import {
   Row,
   Col,
@@ -16,6 +16,8 @@ import {
   message,
   Upload,
   Spin,
+  Modal,
+  Table,
 } from "antd";
 import Graphin, { Utils } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
@@ -62,6 +64,8 @@ export default function Graph() {
   const [inputValue, setInputValue] = React.useState("");
   const [uploading, setUploading] = React.useState(false);
   const [reading, setReading] = React.useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<{sources: string[], target: string} | null>(null);
+
 
   React.useEffect(() => {
     getCallers();
@@ -73,8 +77,10 @@ export default function Graph() {
       .get("http://localhost:3050/user/callers", {
         params: { from: from.toISOString(), to: to.toISOString() },
       })
-      .then((result) => {
-        setCallers(result.data.result);
+      .then(({ data: { success, result } }) => {
+        if(success){
+          setCallers(result);
+        }
       })
       .catch((err) => {
         message.error(err.message);
@@ -252,6 +258,9 @@ export default function Graph() {
       setSelectedCallers([...selectedCallers, menuData.id]);
     } else if (menuItem.key === menuKey.shrink) {
       setSelectedCallers(selectedCallers.filter((sc) => sc !== menuData.id));
+    } else if (menuItem.key === menuKey.info) {
+      const sources = state.data.edges.filter((e: {source: string, target: string})=>e.target === menuData.id);
+      setIsModalOpen({sources: sources.map((s:{source: string})=>s.source), target: menuData.id})
     }
 
     // const count = 4;
@@ -402,6 +411,31 @@ export default function Graph() {
           </Button>
         </div>
       </Drawer>
+      <Modal title={'List of call'} open={isModalOpen ? true : false} onCancel={()=>{setIsModalOpen(null)}} width={1000} footer={null}>
+        {isModalOpen && <ListOfCall {...isModalOpen}/>}
+      </Modal>
     </div>
   );
+}
+
+const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
+  const [reading, setReading] = useState(false);
+  const [callsData, setCallsData] = useState([]);
+  useEffect(()=>{
+    setReading(true);
+    axios.get('http://localhost:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
+      if(success){
+        setCallsData(result)
+      }
+    }).catch(err=>{
+      message.error(err.message)
+    }).finally(()=>{
+      setReading(false)
+    })
+  },[sources, target])
+return reading? <Spin/>:<Table dataSource={callsData} columns={Object.keys(callsData[0]).map((k)=> ({
+  title: k,
+  dataIndex: k,
+  key: k,
+}))}/>
 }
