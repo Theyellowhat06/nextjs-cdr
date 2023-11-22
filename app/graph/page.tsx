@@ -13,6 +13,9 @@ import {
   Button,
   Drawer,
   Input,
+  message,
+  Upload,
+  Spin,
 } from "antd";
 import Graphin, { Utils } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
@@ -20,9 +23,13 @@ import {
   ExpandAltOutlined,
   ShrinkOutlined,
   InfoCircleOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import IconLoader from "@antv/graphin-icons";
+import * as xlsx from "xlsx";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
@@ -44,34 +51,39 @@ export default function Graph() {
     selected: [],
     data: { nodes: [], edges: [] },
   });
+  const router = useRouter();
 
   const [callers, setCallers] = React.useState<any[]>([]);
   const [selectedCallers, setSelectedCallers] = React.useState<string[]>([]);
   const [from, setFrom] = React.useState(new Date("1900-01-01"));
   const [to, setTo] = React.useState(new Date("2200-01-01"));
   const [drawer, setDrawer] = React.useState(false);
+  const [excel, setExcel] = React.useState<any>();
+  const [inputValue, setInputValue] = React.useState("");
+  const [uploading, setUploading] = React.useState(false);
+  const [reading, setReading] = React.useState(false);
 
   React.useEffect(() => {
+    getCallers();
+  }, [from, to]);
+
+  const getCallers = () => {
+    setReading(true);
     axios
       .get("http://localhost:3050/user/callers", {
         params: { from: from.toISOString(), to: to.toISOString() },
       })
       .then((result) => {
         setCallers(result.data.result);
+      })
+      .catch((err) => {
+        message.error(err.message);
+      })
+      .finally(() => {
+        setReading(false);
       });
-  }, [from, to]);
+  };
 
-  // const getNodes = (node={}) =>{
-  //   return new Promise((resolve)=>{
-  //     axios
-  //     .post("http://localhost:3050/user/calls", {
-  //       ids: selectedCallers,
-  //     })
-  //     .then((result) => {
-  //       setCalls(result.data.result);
-  //     });
-  //   })
-  // }
   React.useEffect(() => {
     axios
       .post("http://localhost:3050/user/calls", {
@@ -83,8 +95,60 @@ export default function Graph() {
         } else {
           updateGraphData([]);
         }
-      });
+      })
+      .catch((err) => {
+        message.error(err.message);
+      })
+      .finally(() => {});
   }, [selectedCallers]);
+
+  const onUpload = () => {
+    setUploading(true);
+    axios
+      .post("http://localhost:3050/user/excel_import", {
+        data: excel,
+      })
+      .then(({ data: { success, result } }) => {
+        console.log(data);
+        if (success) {
+          closeDrawer();
+          getCallers();
+          message.success("Амжилттай");
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        message.error(err.message);
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+  };
+
+  const closeDrawer = () => {
+    setDrawer(false);
+    setExcel(null);
+    setInputValue("");
+  };
+
+  const readUploadFile = (e: any) => {
+    setUploading(true);
+    e.preventDefault();
+    if (e.target.files) {
+      setInputValue(e.target.value);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = e?.target?.result;
+        const workbook = xlsx.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = xlsx.utils.sheet_to_json(worksheet);
+        setUploading(false);
+        setExcel(json);
+      };
+      reader.readAsArrayBuffer(e.target.files[0]);
+    }
+  };
 
   const updateGraphData = (callsData: CallType[]) => {
     const edges: { [key: string]: number[] } = {};
@@ -205,31 +269,35 @@ export default function Graph() {
   const { data } = state;
   return (
     <div className="bg-white">
+      <Row gutter={16} className="p-4">
+        <Col>
+          <RangePicker
+            onChange={(date) => {
+              if (date) {
+                const [from, to] = date;
+                if (from) setFrom(from?.toDate());
+                if (to) setTo(to?.toDate());
+              } else {
+                setFrom(new Date("1900-01-01"));
+                setTo(new Date("2200-01-01"));
+              }
+            }}
+          />
+        </Col>
+        <Col>
+          <Button type="primary" onClick={() => setDrawer(true)}>
+            Import Excel
+          </Button>
+        </Col>
+        <Col>
+          <Link href={"./dashboard"}>
+            <Button type="primary">Dashoard</Button>
+          </Link>
+        </Col>
+      </Row>
       <Row gutter={16}>
-        <Col span={18} className="h-screen">
-          <Row gutter={16} className="p-4">
-            <Col>
-              <RangePicker
-                onChange={(date) => {
-                  if (date) {
-                    const [from, to] = date;
-                    if (from) setFrom(from?.toDate());
-                    if (to) setTo(to?.toDate());
-                  } else {
-                    setFrom(new Date("1900-01-01"));
-                    setTo(new Date("2200-01-01"));
-                  }
-                }}
-              />
-            </Col>
-            <Col>
-              <Button type="primary" onClick={() => setDrawer(true)}>
-                Import Excel
-              </Button>
-            </Col>
-          </Row>
-
-          <Card title="graph" bodyStyle={{ height: "90vh" }}>
+        <Col span={18}>
+          <Card title="graph" bodyStyle={{ height: "85vh" }}>
             <div className="w-full h-full">
               <Graphin
                 data={data}
@@ -267,57 +335,72 @@ export default function Graph() {
           <div>
             <Card
               title="Callers"
-              bodyStyle={{ overflow: "auto", height: "90vh" }}>
-              <List
-                itemLayout="horizontal"
-                dataSource={callers}
-                renderItem={(item: CallerType, index) => (
-                  <List.Item>
-                    <Checkbox
-                      className=""
-                      checked={
-                        selectedCallers.find((sc) => sc === item.Caller_id)
-                          ? true
-                          : false
-                      }
-                      onChange={({ target: { checked } }) => {
-                        console.log(checked, item);
-                        if (checked) {
-                          setSelectedCallers([
-                            ...selectedCallers,
-                            item.Caller_id,
-                          ]);
-                        } else {
-                          setSelectedCallers(
-                            selectedCallers.filter(
-                              (val) => val !== item.Caller_id
-                            )
-                          );
+              bodyStyle={{ overflow: "auto", height: "85vh", minWidth: 415 }}>
+              {reading ? (
+                <Spin />
+              ) : (
+                <List
+                  itemLayout="horizontal"
+                  dataSource={callers}
+                  renderItem={(item: CallerType, index) => (
+                    <List.Item>
+                      <Checkbox
+                        className=""
+                        checked={
+                          selectedCallers.find((sc) => sc === item.Caller_id)
+                            ? true
+                            : false
                         }
-                      }}>
-                      <List.Item.Meta
-                        className="w-80"
-                        avatar={
-                          <Avatar
-                            src={`https://xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`}
-                          />
-                        }
-                        title={`${item.Caller_id}`}
-                        description={`Total calls: ${item.count}`}
-                      />
-                    </Checkbox>
-                  </List.Item>
-                )}
-              />
+                        onChange={({ target: { checked } }) => {
+                          console.log(checked, item);
+                          if (checked) {
+                            setSelectedCallers([
+                              ...selectedCallers,
+                              item.Caller_id,
+                            ]);
+                          } else {
+                            setSelectedCallers(
+                              selectedCallers.filter(
+                                (val) => val !== item.Caller_id
+                              )
+                            );
+                          }
+                        }}>
+                        <List.Item.Meta
+                          className="w-80"
+                          avatar={
+                            <Avatar
+                              src={`https://xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`}
+                            />
+                          }
+                          title={`${item.Caller_id}`}
+                          description={`Total calls: ${item.count}`}
+                        />
+                      </Checkbox>
+                    </List.Item>
+                  )}
+                />
+              )}
             </Card>
           </div>
         </Col>
       </Row>
-      <Drawer open={drawer} onClose={() => setDrawer(false)}>
-        <Input type="file" />
-        <Button type="primary" className="bg-red">
-          Submit
-        </Button>
+      <Drawer open={drawer} onClose={closeDrawer}>
+        <div className="flex flex-col">
+          <Input
+            value={inputValue}
+            type="file"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            onChange={readUploadFile}
+          />
+          <Button
+            type="primary"
+            disabled={!excel}
+            loading={uploading}
+            onClick={onUpload}>
+            Submit
+          </Button>
+        </div>
       </Drawer>
     </div>
   );
