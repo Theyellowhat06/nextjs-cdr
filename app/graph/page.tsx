@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable no-undef */
-import React, {useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import {
   Row,
   Col,
@@ -18,6 +18,8 @@ import {
   Spin,
   Modal,
   Table,
+  Empty,
+  Popconfirm,
 } from "antd";
 import Graphin, { Utils } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
@@ -49,32 +51,32 @@ enum menuKey {
 }
 
 export default function Graph() {
-  const [state, setState] = React.useState({
+  const [state, setState] = useState({
     selected: [],
     data: { nodes: [], edges: [] },
   });
   const router = useRouter();
 
-  const [callers, setCallers] = React.useState<any[]>([]);
-  const [selectedCallers, setSelectedCallers] = React.useState<string[]>([]);
-  const [from, setFrom] = React.useState(new Date("1900-01-01"));
-  const [to, setTo] = React.useState(new Date("2200-01-01"));
-  const [drawer, setDrawer] = React.useState(false);
-  const [excel, setExcel] = React.useState<any>();
-  const [inputValue, setInputValue] = React.useState("");
-  const [uploading, setUploading] = React.useState(false);
-  const [reading, setReading] = React.useState(false);
+  const [callers, setCallers] = useState<any[]>([]);
+  const [selectedCallers, setSelectedCallers] = useState<string[]>([]);
+  const [from, setFrom] = useState(new Date("1900-01-01"));
+  const [to, setTo] = useState(new Date("2200-01-01"));
+  const [drawer, setDrawer] = useState(false);
+  const [excel, setExcel] = useState<any>();
+  const [inputValue, setInputValue] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [reading, setReading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<{sources: string[], target: string} | null>(null);
 
 
-  React.useEffect(() => {
+  useEffect(() => {
     getCallers();
   }, [from, to]);
 
   const getCallers = () => {
     setReading(true);
     axios
-      .get("http://localhost:3050/user/callers", {
+      .get("http://54.169.97.21:3050/user/callers", {
         params: { from: from.toISOString(), to: to.toISOString() },
       })
       .then(({ data: { success, result } }) => {
@@ -90,9 +92,9 @@ export default function Graph() {
       });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     axios
-      .post("http://localhost:3050/user/calls", {
+      .post("http://54.169.97.21:3050/user/calls", {
         ids: selectedCallers,
       })
       .then(({ data: { success, result } }) => {
@@ -111,10 +113,10 @@ export default function Graph() {
   const onUpload = () => {
     setUploading(true);
     axios
-      .post("http://localhost:3050/user/excel_import", {
+      .post("http://54.169.97.21:3050/user/excel_import", {
         data: excel,
       })
-      .then(({ data: { success, result } }) => {
+      .then(({ data: { success } }) => {
         console.log(data);
         if (success) {
           closeDrawer();
@@ -130,6 +132,32 @@ export default function Graph() {
         setUploading(false);
       });
   };
+
+  const removeAllRecords = () =>{
+    setUploading(true);
+    axios
+      .post("http://54.169.97.21:3050/user/remove_all_records", {
+        data: excel,
+      })
+      .then(({ data: { success, msg } }) => {
+        console.log(data);
+        if (success) {
+          closeDrawer();
+          getCallers();
+          setSelectedCallers([]);
+          message.success("Амжилттай");
+        }else{
+          message.error(msg)
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        message.error(err.message);
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+  }
 
   const closeDrawer = () => {
     setDrawer(false);
@@ -303,6 +331,11 @@ export default function Graph() {
             <Button type="primary">Dashoard</Button>
           </Link>
         </Col>
+        <Col>
+        <Popconfirm title={'Removing all records'} description={'Do you really want to remove all records?'} onConfirm={removeAllRecords} okButtonProps={{loading: uploading}}>
+          <Button danger>Remove all record</Button>
+        </Popconfirm>
+        </Col>
       </Row>
       <Row gutter={16}>
         <Col span={18}>
@@ -423,7 +456,7 @@ const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
   const [callsData, setCallsData] = useState([]);
   useEffect(()=>{
     setReading(true);
-    axios.get('http://localhost:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
+    axios.get('http://54.169.97.21:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
       if(success){
         setCallsData(result)
       }
@@ -433,9 +466,9 @@ const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
       setReading(false)
     })
   },[sources, target])
-return reading? <Spin/>:<Table dataSource={callsData} columns={Object.keys(callsData[0]).map((k)=> ({
+return reading? <Spin/>: callsData && callsData.length > 0 ? <Table dataSource={callsData} columns={Object.keys(callsData[0]).map((k)=> ({
   title: k,
   dataIndex: k,
   key: k,
-}))}/>
+}))}/>: <Empty/>
 }

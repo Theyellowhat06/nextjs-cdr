@@ -15,7 +15,7 @@ export default function DemoDualAxes() {
   const [reading, setReading] = useState(false);
   useEffect(()=>{
     setReading(true)
-    axios.get('http://localhost:3050/user/calls_by_date', {
+    axios.get('http://54.169.97.21:3050/user/calls_by_date', {
       params: { from: from.toISOString(), to: to.toISOString() },
     }).then(({ data: { success, result } })=>{
       if(success){
