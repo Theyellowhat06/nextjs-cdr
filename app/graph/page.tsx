@@ -51,7 +51,7 @@ enum menuKey {
 }
 
 export default function Graph() {
-  const [state, setState] = useState({
+  const [state, setState] = useState<{selected: any[], data:{nodes:any[], edges: any[]}}>({
     selected: [],
     data: { nodes: [], edges: [] },
   });
@@ -186,7 +186,7 @@ export default function Graph() {
 
   const updateGraphData = (callsData: CallType[]) => {
     const edges: { [key: string]: number[] } = {};
-    const idArray = [...new Set(callsData.map((item) => item.Caller_id))];
+    const idArray = Array.from(new Set(callsData.map((item) => item.Caller_id)));
     callsData.forEach((c) => {
       edges[`${c.Caller_id}-${c.Receiver_id}`] = [
         ...(edges[`${c.Caller_id}-${c.Receiver_id}`] || []),
