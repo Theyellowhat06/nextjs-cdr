@@ -14,12 +14,13 @@ import {
   Drawer,
   Input,
   message,
-  Upload,
   Spin,
   Modal,
   Table,
   Empty,
   Popconfirm,
+  Image,
+  Tabs
 } from "antd";
 import Graphin, { Utils } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
@@ -28,26 +29,29 @@ import {
   ShrinkOutlined,
   InfoCircleOutlined,
   UploadOutlined,
+  EditOutlined
 } from "@ant-design/icons";
 import axios from "axios";
 import IconLoader from "@antv/graphin-icons";
 import * as xlsx from "xlsx";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import TextArea from "antd/es/input/TextArea";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
 
 const icons = Graphin.registerFontFamily(IconLoader);
 
-type CallType = { Caller_id: string; Duration_s: number; Receiver_id: string };
-type CallerType = { Caller_id: string; count: number };
+type CallType = { Caller_id: string; Duration_s: number; Receiver_id: string; icon: string | null; info: string | null};
+type CallerType = { Caller_id: string; count: number; icon: string | null; info: string | null };
 
 enum menuKey {
   expand = "expand",
   remove = "remove",
   shrink = "shrink",
   info = "info",
+  editIcon = 'editIcon'
 }
 
 export default function Graph() {
@@ -67,6 +71,25 @@ export default function Graph() {
   const [uploading, setUploading] = useState(false);
   const [reading, setReading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<{sources: string[], target: string} | null>(null);
+  const [openEditUser, setOpenEditUser] = useState<{info: string, callerId: string} | null>(null);
+  const [openEditIcon, setOpenEditIcon] = useState(false);
+  const [iconTab, setIconTab] = useState('1');
+  const [customIcon, setCustomIcon] = useState<any | null>(null);
+  const [choosenIcon, setChoosenIcon] = useState<string | null>(null);
+  const contactIcons = [
+    './icons/arroba.png',
+    './icons/calendar.png',
+    './icons/chat-1.png',
+    './icons/chat.png',
+    './icons/contract.png',
+    './icons/house.png',
+    './icons/id-card.png',
+    './icons/info.png',
+    './icons/placeholder.png',
+    './icons/telephone-1.png',
+    './icons/telephone.png',
+    './icons/worldwide.png',
+  ]
 
 
   useEffect(() => {
@@ -76,7 +99,7 @@ export default function Graph() {
   const getCallers = () => {
     setReading(true);
     axios
-      .get("http://54.169.97.21:3050/user/callers", {
+      .get("http://13.212.101.85:3050/user/callers", {
         params: { from: from.toISOString(), to: to.toISOString() },
       })
       .then(({ data: { success, result } }) => {
@@ -94,7 +117,7 @@ export default function Graph() {
 
   useEffect(() => {
     axios
-      .post("http://54.169.97.21:3050/user/calls", {
+      .post("http://13.212.101.85:3050/user/calls", {
         ids: selectedCallers,
       })
       .then(({ data: { success, result } }) => {
@@ -113,7 +136,7 @@ export default function Graph() {
   const onUpload = () => {
     setUploading(true);
     axios
-      .post("http://54.169.97.21:3050/user/excel_import", {
+      .post("http://13.212.101.85:3050/user/excel_import", {
         data: excel,
       })
       .then(({ data: { success } }) => {
@@ -136,7 +159,7 @@ export default function Graph() {
   const removeAllRecords = () =>{
     setUploading(true);
     axios
-      .post("http://54.169.97.21:3050/user/remove_all_records", {
+      .post("http://13.212.101.85:3050/user/remove_all_records", {
         data: excel,
       })
       .then(({ data: { success, msg } }) => {
@@ -197,7 +220,7 @@ export default function Graph() {
     console.log({
       nodes: [
         ...idArray.map((pn) => setNode({ id: pn.toString() })),
-        ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString() })),
+        ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString(), icon: cd.icon })),
       ],
       edges: [
         ...Object.keys(edges).map((e) => {
@@ -219,8 +242,8 @@ export default function Graph() {
       ...state,
       data: {
         nodes: [
-          ...idArray.map((pn) => setNode({ id: pn.toString() })),
-          ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString() })),
+          ...idArray.map((pn) => setNode({ id: pn.toString(), icon: callsData.find((cd)=> cd.Caller_id == pn)?.icon })),
+          ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString()})),
         ],
         edges: [
           ...Object.keys(edges).map((e) => {
@@ -263,7 +286,7 @@ export default function Graph() {
     };
   };
 
-  const setNode = ({ id, label }: { id: string; label?: string }) => {
+  const setNode = ({ id, label, icon }: { id: string; label?: string; icon?: string | null }) => {
     return {
       id: id,
       style: {
@@ -271,9 +294,12 @@ export default function Graph() {
           value: label || id,
         },
         icon: {
-          fontFamily: "graphin",
-          type: "font",
-          value: icons.home,
+          type: 'image',
+          value: icon ?? `./icons/telephone.png`,
+          size: [17, 17],
+          clip: {
+            r: 10,
+          },
         },
       },
     };
@@ -289,6 +315,8 @@ export default function Graph() {
     } else if (menuItem.key === menuKey.info) {
       const sources = state.data.edges.filter((e: {source: string, target: string})=>e.target === menuData.id);
       setIsModalOpen({sources: sources.map((s:{source: string})=>s.source), target: menuData.id})
+    } else if(menuItem.key === menuKey.editIcon){
+      setOpenEditIcon(menuData.id)
     }
 
     // const count = 4;
@@ -364,6 +392,10 @@ export default function Graph() {
                         key: menuKey.info,
                         icon: <InfoCircleOutlined />,
                         name: "info",
+                      },{
+                        key: menuKey.editIcon,
+                        icon: <EditOutlined />,
+                        name: "Edit icon",
                       },
                     ]}
                     onChange={handleChange}
@@ -386,6 +418,7 @@ export default function Graph() {
                   dataSource={callers}
                   renderItem={(item: CallerType, index) => (
                     <List.Item>
+                      <div className="flex">
                       <Checkbox
                         className=""
                         checked={
@@ -409,24 +442,82 @@ export default function Graph() {
                           }
                         }}>
                         <List.Item.Meta
-                          className="w-80"
+                          className="w-72"
                           avatar={
                             <Avatar
-                              src={`https://xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`}
+                              src={item.icon ?? `https://xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`}
                             />
                           }
-                          title={`${item.Caller_id}`}
+                          title={`${item.Caller_id} ${item.info ? `(${item.info})`: ''}`}
                           description={`Total calls: ${item.count}`}
                         />
                       </Checkbox>
+                      <Button shape="circle" onClick={()=>{setOpenEditUser({callerId: item.Caller_id, info: item.info ?? ''})}}><EditOutlined /></Button>
+                      </div>
                     </List.Item>
                   )}
                 />
               )}
+              
             </Card>
           </div>
         </Col>
       </Row>
+      <Drawer open={openEditIcon} title="Icons" onClose={()=>setOpenEditIcon(false)} extra={<Button type="primary" onClick={()=>{
+        console.log(customIcon)
+        axios.post('./api/uploadCustomImage', {caller_id: openEditIcon, icon: iconTab === '1'? undefined :customIcon, icon_path: choosenIcon}).then(({data: {success}})=>{
+          if(success){
+            getCallers()
+            setSelectedCallers([])
+            setOpenEditIcon(false)
+            message.success('Contact icon updated successfully');
+          }
+        })
+      }}>Save</Button>}>
+          <div className="text-black">
+            <Tabs defaultActiveKey="1" onChange={(val)=>{setIconTab(val)}} items={[
+              {
+                key: '1',
+                label: 'Default Icons',
+children: <Row gutter={[16, 24]}>
+{contactIcons.map((icon, index)=> (<Col key={index} className={`gutter-row`} span={6}><Card style={{...{cursor: 'pointer'}, ...(choosenIcon == icon ? {background: '#0090ff1c'}: {})}} hoverable={true} onClick={()=>{setChoosenIcon(icon)}}><img style={{width: 20}} src={icon}/></Card></Col>))}
+</Row>
+              },
+              {
+                key: '2',
+                label: 'Custom Icons',
+                children: <div><input type="file" onChange={(e)=>{
+                  const file = e.target.files?.[0];
+
+                  if (file) {
+                    const reader = new FileReader();
+
+                    reader.onloadend = () => {
+                      setCustomIcon(reader.result);
+                    };
+
+                    reader.readAsDataURL(file);
+                  }
+                }}/>{customIcon ? <Image className="pt-8" src={customIcon}/>: <></>}</div>
+              }
+            ]}/>
+          </div>
+      </Drawer>
+      <Drawer open={!!openEditUser} onClose={()=>setOpenEditUser(null)} extra={<Button type="primary" onClick={()=>{
+        axios.post('http://13.212.101.85:3050/contacts/info', {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
+          if(success){
+            getCallers();
+            setSelectedCallers([])
+            message.success('Contact info updated succesfully')
+            setOpenEditUser(null)
+          }
+        })
+      }}>Save</Button>}>
+          <div className="text-black">
+            <p>Notes</p>
+            <TextArea title="Notes" value={openEditUser?.info} onChange={(e)=>setOpenEditUser({callerId: openEditUser?.callerId as string, info: e.target.value})}/>
+          </div>
+      </Drawer>
       <Drawer open={drawer} onClose={closeDrawer}>
         <div className="flex flex-col">
           <Input
@@ -456,7 +547,7 @@ const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
   const [callsData, setCallsData] = useState([]);
   useEffect(()=>{
     setReading(true);
-    axios.get('http://54.169.97.21:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
+    axios.get('http://13.212.101.85:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
       if(success){
         setCallsData(result)
       }
