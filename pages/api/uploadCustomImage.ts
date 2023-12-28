@@ -24,7 +24,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
         try {
           fs.writeFileSync(filePath, buffer, 'binary');
-          axios.post('http://13.212.101.85:3050/contacts/updateImage', {icon: fileServerPath, caller_id}).then(({status, data})=>{
+          axios.post('http://localhost:3050/contacts/updateImage', {icon: fileServerPath, caller_id}).then(({status, data})=>{
             return res.status(status).json(data)
           }).catch(()=>{
             return res.status(500).json({ error: 'Internal Server Error' });
@@ -35,7 +35,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           return res.status(500).json({ error: 'Internal Server Error' });
         }
       }else if(icon_path){
-        axios.post('http://13.212.101.85:3050/contacts/updateImage', {icon: icon_path, caller_id}).then(({status, data})=>{
+        axios.post('http://localhost:3050/contacts/updateImage', {icon: icon_path, caller_id}).then(({status, data})=>{
             return res.status(status).json(data)
           }).catch(()=>{
             return res.status(500).json({ error: 'Internal Server Error' });

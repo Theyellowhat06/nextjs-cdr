@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable no-undef */
-import {useState, useEffect} from "react";
+import {useState, useEffect, useMemo} from "react";
 import {
   Row,
   Col,
@@ -20,7 +20,8 @@ import {
   Empty,
   Popconfirm,
   Image,
-  Tabs
+  Tabs,
+  Divider
 } from "antd";
 import Graphin, { Utils } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
@@ -37,6 +38,7 @@ import * as xlsx from "xlsx";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TextArea from "antd/es/input/TextArea";
+import Search from "antd/es/input/Search";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
@@ -91,16 +93,37 @@ export default function Graph() {
     './icons/worldwide.png',
   ]
 
+  const [search, setSearch] = useState({id: '', info: ''})
+  // const callers: any[] = useMemo(async()=>{
+  //   setReading(true);
+  //   await axios
+  //     .get("http://47.245.90.56:3050/user/callers", {
+  //       params: { from: from.toISOString(), to: to.toISOString(), ...search },
+  //     })
+  //     .then(({ data: { success, result } }) => {
+  //       if(success){
+  //         return result
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       message.error(err.message);
+  //       return []
+  //     })
+  //     .finally(() => {
+  //       setReading(false);
+  //       return []
+  //     });
+  // }, [from, to, search])
 
   useEffect(() => {
     getCallers();
-  }, [from, to]);
+  }, [from, to, search]);
 
   const getCallers = () => {
     setReading(true);
     axios
-      .get("http://13.212.101.85:3050/user/callers", {
-        params: { from: from.toISOString(), to: to.toISOString() },
+      .get("http://47.245.90.56:3050/user/callers", {
+        params: { from: from.toISOString(), to: to.toISOString(), ...search },
       })
       .then(({ data: { success, result } }) => {
         if(success){
@@ -117,14 +140,14 @@ export default function Graph() {
 
   useEffect(() => {
     axios
-      .post("http://13.212.101.85:3050/user/calls", {
+      .post("http://47.245.90.56:3050/user/calls", {
         ids: selectedCallers,
       })
-      .then(({ data: { success, result } }) => {
+      .then(({ data: { success, result, recieved_calls } }) => {
         if (success) {
-          updateGraphData(result);
+          updateGraphData(result, recieved_calls);
         } else {
-          updateGraphData([]);
+          updateGraphData([], []);
         }
       })
       .catch((err) => {
@@ -136,7 +159,7 @@ export default function Graph() {
   const onUpload = () => {
     setUploading(true);
     axios
-      .post("http://13.212.101.85:3050/user/excel_import", {
+      .post("http://47.245.90.56:3050/user/excel_import", {
         data: excel,
       })
       .then(({ data: { success } }) => {
@@ -159,7 +182,7 @@ export default function Graph() {
   const removeAllRecords = () =>{
     setUploading(true);
     axios
-      .post("http://13.212.101.85:3050/user/remove_all_records", {
+      .post("http://47.245.90.56:3050/user/remove_all_records", {
         data: excel,
       })
       .then(({ data: { success, msg } }) => {
@@ -207,8 +230,9 @@ export default function Graph() {
     }
   };
 
-  const updateGraphData = (callsData: CallType[]) => {
+  const updateGraphData = (callsData: CallType[], receivedCalls: CallType[]) => {
     const edges: { [key: string]: number[] } = {};
+    const recievedEdges: { [key: string]: number[] } = {};
     const idArray = [...new Set(callsData.map((item) => item.Caller_id))];
     callsData.forEach((c) => {
       edges[`${c.Caller_id}-${c.Receiver_id}`] = [
@@ -216,36 +240,38 @@ export default function Graph() {
         c.Duration_s,
       ];
     });
+    receivedCalls.forEach((rc)=>{
+      recievedEdges[`${rc.Receiver_id}-${rc.Caller_id}`] = [
+        ...(edges[`${rc.Receiver_id}-${rc.Caller_id}`] || []),
+        rc.Duration_s,
+      ];
+    })
     console.log("edges:", edges);
-    console.log({
-      nodes: [
-        ...idArray.map((pn) => setNode({ id: pn.toString() })),
-        ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString(), icon: cd.icon })),
-      ],
-      edges: [
-        ...Object.keys(edges).map((e) => {
-          const [target, srouce] = e.split("-");
-          return setEdge({
-            source: target,
-            target: srouce,
-          });
-        }),
-        ...callsData.map((cd) =>
-          setEdge({
-            source: cd.Caller_id.toString(),
-            target: cd.Receiver_id.toString(),
-          })
-        ),
-      ],
-    });
     setState({
       ...state,
       data: {
         nodes: [
-          ...idArray.map((pn) => setNode({ id: pn.toString(), icon: callsData.find((cd)=> cd.Caller_id == pn)?.icon })),
+          ...idArray.map((pn) => setNode({ id: pn.toString(), ...(() => {const cd = callsData.find((cd)=> cd.Caller_id == pn); return {icon: cd?.icon, label: `${pn} (${cd?.info})`} })()})),
           ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString()})),
+          ...receivedCalls.map((rc) => setNode({ id: rc.Caller_id.toString()}))
         ],
         edges: [
+          ...Object.keys(recievedEdges).map((e) => {
+            const [target, srouce] = e.split("-");
+            const max = Math.max(...recievedEdges[e]);
+            const min = Math.min(...recievedEdges[e]);
+            const sum = recievedEdges[e].reduce(
+              (accumulator, currentValue) => accumulator + currentValue,
+              0
+            );
+            const avg = sum / recievedEdges[e].length;
+            return setEdge({
+              source: target,
+              target: srouce,
+              label: `avg: ${avg.toFixed(2)}`,
+              color: 'green'
+            });
+          }),
           ...Object.keys(edges).map((e) => {
             const [target, srouce] = e.split("-");
             const max = Math.max(...edges[e]);
@@ -259,6 +285,7 @@ export default function Graph() {
               source: target,
               target: srouce,
               label: `avg: ${avg.toFixed(2)}`,
+              color: recievedEdges[e] ? 'orange':'red' 
             });
           }),
         ],
@@ -270,10 +297,12 @@ export default function Graph() {
     source,
     target,
     label,
+    color
   }: {
     source: string;
     target: string;
     label?: string;
+    color?: string;
   }) => {
     return {
       source: source,
@@ -282,6 +311,10 @@ export default function Graph() {
         label: {
           value: label || "",
         },
+        ...(color ? {keyshape: {
+          stroke: color,
+          // lineWidth: 4,
+        }}:{})
       },
     };
   };
@@ -410,12 +443,32 @@ export default function Graph() {
             <Card
               title="Callers"
               bodyStyle={{ overflow: "auto", height: "85vh", minWidth: 415 }}>
+                <div>
+                  <Tabs
+                  type="card"
+                  size="small"
+                  tabBarStyle={{
+                    padding: 0,
+                    margin: 0
+                  }}
+                  items={[
+                    {key: 'id',
+                    label: 'ID',
+                    children: <Search allowClear placeholder="Enter ID" onSearch={(val)=>setSearch({id: val, info: ''})}/>
+                  },{
+                    key: 'info',
+                    label: 'Info',
+                    children: <Search allowClear placeholder="Enter info" onSearch={(val)=>setSearch({id: '', info: val})}/>
+                  }
+                  ]}
+                  />
+                <Divider/>
               {reading ? (
                 <Spin />
               ) : (
                 <List
                   itemLayout="horizontal"
-                  dataSource={callers}
+                  dataSource={callers ?? []}
                   renderItem={(item: CallerType, index) => (
                     <List.Item>
                       <div className="flex">
@@ -458,7 +511,7 @@ export default function Graph() {
                   )}
                 />
               )}
-              
+              </div>
             </Card>
           </div>
         </Col>
@@ -504,7 +557,7 @@ children: <Row gutter={[16, 24]}>
           </div>
       </Drawer>
       <Drawer open={!!openEditUser} onClose={()=>setOpenEditUser(null)} extra={<Button type="primary" onClick={()=>{
-        axios.post('http://13.212.101.85:3050/contacts/info', {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
+        axios.post('http://47.245.90.56:3050/contacts/info', {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
           if(success){
             getCallers();
             setSelectedCallers([])
@@ -547,7 +600,7 @@ const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
   const [callsData, setCallsData] = useState([]);
   useEffect(()=>{
     setReading(true);
-    axios.get('http://13.212.101.85:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
+    axios.get('http://47.245.90.56:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
       if(success){
         setCallsData(result)
       }
