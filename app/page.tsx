@@ -1,9 +1,5 @@
 "use client";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { RadialGraph } from "@ant-design/graphs";
-import axios from "axios";
-import { Button, Checkbox } from "antd";
+import { Button } from "antd";
 import Link from "next/link";
 
 export default function Home() {

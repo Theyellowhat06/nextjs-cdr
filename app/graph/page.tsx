@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 /* eslint-disable no-undef */
-import {useState, useEffect, useMemo} from "react";
+import {useState, useEffect} from "react";
 import {
   Row,
   Col,
@@ -23,19 +24,16 @@ import {
   Tabs,
   Divider
 } from "antd";
-import Graphin, { Utils } from "@antv/graphin";
+import Graphin from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
 import {
   ExpandAltOutlined,
   ShrinkOutlined,
   InfoCircleOutlined,
-  UploadOutlined,
   EditOutlined
 } from "@ant-design/icons";
 import axios from "axios";
-import IconLoader from "@antv/graphin-icons";
 import * as xlsx from "xlsx";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TextArea from "antd/es/input/TextArea";
 import Search from "antd/es/input/Search";
@@ -43,7 +41,7 @@ import Search from "antd/es/input/Search";
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
 
-const icons = Graphin.registerFontFamily(IconLoader);
+// const icons = Graphin.registerFontFamily(IconLoader);
 
 type CallType = { Caller_id: string; Duration_s: number; Receiver_id: string; icon: string | null; info: string | null};
 type CallerType = { Caller_id: string; count: number; icon: string | null; info: string | null };
@@ -57,12 +55,11 @@ enum menuKey {
 }
 
 export default function Graph() {
-  const [state, setState] = useState({
+  const [state, setState] = useState<{selected: any[], data:{nodes:any[], edges: any[]}}>({
     selected: [],
     data: { nodes: [], edges: [] },
   });
-  const router = useRouter();
-
+  
   const [callers, setCallers] = useState<any[]>([]);
   const [selectedCallers, setSelectedCallers] = useState<string[]>([]);
   const [from, setFrom] = useState(new Date("1900-01-01"));
@@ -233,7 +230,7 @@ export default function Graph() {
   const updateGraphData = (callsData: CallType[], receivedCalls: CallType[]) => {
     const edges: { [key: string]: number[] } = {};
     const recievedEdges: { [key: string]: number[] } = {};
-    const idArray = [...new Set(callsData.map((item) => item.Caller_id))];
+    const idArray = Array.from(new Set(callsData.map((item) => item.Caller_id)));
     callsData.forEach((c) => {
       edges[`${c.Caller_id}-${c.Receiver_id}`] = [
         ...(edges[`${c.Caller_id}-${c.Receiver_id}`] || []),
@@ -258,8 +255,8 @@ export default function Graph() {
         edges: [
           ...Object.keys(recievedEdges).map((e) => {
             const [target, srouce] = e.split("-");
-            const max = Math.max(...recievedEdges[e]);
-            const min = Math.min(...recievedEdges[e]);
+            // const max = Math.max(...recievedEdges[e]);
+            // const min = Math.min(...recievedEdges[e]);
             const sum = recievedEdges[e].reduce(
               (accumulator, currentValue) => accumulator + currentValue,
               0
@@ -274,8 +271,8 @@ export default function Graph() {
           }),
           ...Object.keys(edges).map((e) => {
             const [target, srouce] = e.split("-");
-            const max = Math.max(...edges[e]);
-            const min = Math.min(...edges[e]);
+            // const max = Math.max(...edges[e]);
+            // const min = Math.min(...edges[e]);
             const sum = edges[e].reduce(
               (accumulator, currentValue) => accumulator + currentValue,
               0
