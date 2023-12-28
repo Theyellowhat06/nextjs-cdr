@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from "react";
 import { DualAxes } from "@ant-design/plots";
@@ -11,22 +10,27 @@ const { RangePicker } = DatePicker;
 export default function DemoDualAxes() {
   const [from, setFrom] = useState(new Date("1900-01-01"));
   const [to, setTo] = useState(new Date("2200-01-01"));
-  const [chartData, setChartData] = useState<Record<string, any>[]>();
+  const [chartData, setChartData] =
+    useState<{ [key: string]: { [key: string]: string } }[]>();
   const [reading, setReading] = useState(false);
-  useEffect(()=>{
-    setReading(true)
-    axios.get(`${process.env.NEXT_PUBLIC_API}/user/calls_by_date`, {
-      params: { from: from.toISOString(), to: to.toISOString() },
-    }).then(({ data: { success, result } })=>{
-      if(success){
-        setChartData(result)
-      }
-    }).catch((err) => {
-      message.error(err.message)
-    }).finally(()=>{
-      setReading(false)
-    })
-  },[from, to])
+  useEffect(() => {
+    setReading(true);
+    axios
+      .get(`${process.env.NEXT_PUBLIC_API}/user/calls_by_date`, {
+        params: { from: from.toISOString(), to: to.toISOString() },
+      })
+      .then(({ data: { success, result } }) => {
+        if (success) {
+          setChartData(result);
+        }
+      })
+      .catch((err) => {
+        message.error(err.message);
+      })
+      .finally(() => {
+        setReading(false);
+      });
+  }, [from, to]);
   // const data = [
   //   {
   //     year: "1991",
@@ -113,7 +117,17 @@ export default function DemoDualAxes() {
         </Col>
       </Row>
       <Card title={"Chart"}>
-        {reading ?<Spin/>: chartData && chartData.length > 0? <DualAxes data={[chartData, chartData]} xField={"formated_date"} yField={['max_dura', 'min_dura', 'avg_dura']}  />: <Empty/>}
+        {reading ? (
+          <Spin />
+        ) : chartData && chartData.length > 0 ? (
+          <DualAxes
+            data={[chartData, chartData]}
+            xField={"formated_date"}
+            yField={["max_dura", "min_dura", "avg_dura"]}
+          />
+        ) : (
+          <Empty />
+        )}
       </Card>
     </div>
   );

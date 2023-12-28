@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-/* eslint-disable no-undef */
-import {useState, useEffect} from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import {
   Row,
   Col,
@@ -22,75 +20,93 @@ import {
   Popconfirm,
   Image,
   Tabs,
-  Divider
+  Divider,
 } from "antd";
-import Graphin from "@antv/graphin";
+import Graphin, { GraphinData, IUserNode } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
 import {
   ExpandAltOutlined,
   ShrinkOutlined,
   InfoCircleOutlined,
-  EditOutlined
+  EditOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import * as xlsx from "xlsx";
 import Link from "next/link";
 import TextArea from "antd/es/input/TextArea";
 import Search from "antd/es/input/Search";
+import { Item } from "@antv/graphin-components/lib/ContextMenu/Menu";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
 
-// const icons = Graphin.registerFontFamily(IconLoader);
-
-type CallType = { Caller_id: string; Duration_s: number; Receiver_id: string; icon: string | null; info: string | null};
-type CallerType = { Caller_id: string; count: number; icon: string | null; info: string | null };
+type CallType = {
+  Caller_id: string;
+  Duration_s: number;
+  Receiver_id: string;
+  icon: string | null;
+  info: string | null;
+  rc_icon: string | null;
+  rc_info: string | null;
+};
+type CallerType = {
+  Caller_id: string;
+  count: number;
+  icon: string | null;
+  info: string | null;
+};
 
 enum menuKey {
   expand = "expand",
   remove = "remove",
   shrink = "shrink",
   info = "info",
-  editIcon = 'editIcon'
+  editIcon = "editIcon",
 }
 
 export default function Graph() {
-  const [state, setState] = useState<{selected: any[], data:{nodes:any[], edges: any[]}}>({
+  const [state, setState] = useState<{ selected: []; data: GraphinData }>({
     selected: [],
     data: { nodes: [], edges: [] },
   });
-  
-  const [callers, setCallers] = useState<any[]>([]);
+
+  const [callers, setCallers] = useState<CallerType[]>([]);
   const [selectedCallers, setSelectedCallers] = useState<string[]>([]);
   const [from, setFrom] = useState(new Date("1900-01-01"));
   const [to, setTo] = useState(new Date("2200-01-01"));
   const [drawer, setDrawer] = useState(false);
-  const [excel, setExcel] = useState<any>();
+  const [excel, setExcel] = useState<unknown>();
   const [inputValue, setInputValue] = useState("");
   const [uploading, setUploading] = useState(false);
   const [reading, setReading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState<{sources: string[], target: string} | null>(null);
-  const [openEditUser, setOpenEditUser] = useState<{info: string, callerId: string} | null>(null);
-  const [openEditIcon, setOpenEditIcon] = useState(false);
-  const [iconTab, setIconTab] = useState('1');
-  const [customIcon, setCustomIcon] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<{
+    sources: string[];
+    target: string;
+  } | null>(null);
+  const [openEditUser, setOpenEditUser] = useState<{
+    info: string;
+    callerId: string;
+  } | null>(null);
+  const [openEditIcon, setOpenEditIcon] = useState<boolean | string>(false);
+  const [iconTab, setIconTab] = useState("1");
+  const [customIcon, setCustomIcon] = useState<string | undefined | null>(null);
   const [choosenIcon, setChoosenIcon] = useState<string | null>(null);
   const contactIcons = [
-    './icons/arroba.png',
-    './icons/calendar.png',
-    './icons/chat-1.png',
-    './icons/chat.png',
-    './icons/contract.png',
-    './icons/house.png',
-    './icons/id-card.png',
-    './icons/info.png',
-    './icons/placeholder.png',
-    './icons/telephone-1.png',
-    './icons/telephone.png',
-    './icons/worldwide.png',
-  ]
+    "./icons/arroba.png",
+    "./icons/calendar.png",
+    "./icons/chat-1.png",
+    "./icons/chat.png",
+    "./icons/contract.png",
+    "./icons/house.png",
+    "./icons/id-card.png",
+    "./icons/info.png",
+    "./icons/placeholder.png",
+    "./icons/telephone-1.png",
+    "./icons/telephone.png",
+    "./icons/worldwide.png",
+  ];
 
-  const [search, setSearch] = useState({id: '', info: ''})
+  const [search, setSearch] = useState({ id: "", info: "" });
   // const callers: any[] = useMemo(async()=>{
   //   setReading(true);
   //   await axios
@@ -123,7 +139,7 @@ export default function Graph() {
         params: { from: from.toISOString(), to: to.toISOString(), ...search },
       })
       .then(({ data: { success, result } }) => {
-        if(success){
+        if (success) {
           setCallers(result);
         }
       })
@@ -176,7 +192,7 @@ export default function Graph() {
       });
   };
 
-  const removeAllRecords = () =>{
+  const removeAllRecords = () => {
     setUploading(true);
     axios
       .post(`${process.env.NEXT_PUBLIC_API}/user/remove_all_records`, {
@@ -189,8 +205,8 @@ export default function Graph() {
           getCallers();
           setSelectedCallers([]);
           message.success("Амжилттай");
-        }else{
-          message.error(msg)
+        } else {
+          message.error(msg);
         }
       })
       .catch((err) => {
@@ -200,7 +216,7 @@ export default function Graph() {
       .finally(() => {
         setUploading(false);
       });
-  }
+  };
 
   const closeDrawer = () => {
     setDrawer(false);
@@ -208,7 +224,7 @@ export default function Graph() {
     setInputValue("");
   };
 
-  const readUploadFile = (e: any) => {
+  const readUploadFile = (e: ChangeEvent<HTMLInputElement>) => {
     setUploading(true);
     e.preventDefault();
     if (e.target.files) {
@@ -227,30 +243,45 @@ export default function Graph() {
     }
   };
 
-  const updateGraphData = (callsData: CallType[], receivedCalls: CallType[]) => {
+  const updateGraphData = (
+    callsData: CallType[],
+    receivedCalls: CallType[]
+  ) => {
     const edges: { [key: string]: number[] } = {};
     const recievedEdges: { [key: string]: number[] } = {};
-    const idArray = Array.from(new Set(callsData.map((item) => item.Caller_id)));
+    const idArray = Array.from(
+      new Set(callsData.map((item) => item.Caller_id))
+    );
     callsData.forEach((c) => {
       edges[`${c.Caller_id}-${c.Receiver_id}`] = [
         ...(edges[`${c.Caller_id}-${c.Receiver_id}`] || []),
         c.Duration_s,
       ];
     });
-    receivedCalls.forEach((rc)=>{
+    receivedCalls.forEach((rc) => {
       recievedEdges[`${rc.Receiver_id}-${rc.Caller_id}`] = [
         ...(edges[`${rc.Receiver_id}-${rc.Caller_id}`] || []),
         rc.Duration_s,
       ];
-    })
+    });
     console.log("edges:", edges);
     setState({
       ...state,
       data: {
         nodes: [
-          ...idArray.map((pn) => setNode({ id: pn.toString(), ...(() => {const cd = callsData.find((cd)=> cd.Caller_id == pn); return {icon: cd?.icon, label: `${pn} (${cd?.info})`} })()})),
-          ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString()})),
-          ...receivedCalls.map((rc) => setNode({ id: rc.Caller_id.toString()}))
+          ...idArray.map((pn) =>
+            setNode({
+              id: pn.toString(),
+              ...(() => {
+                const cd = callsData.find((cd) => cd.Caller_id == pn);
+                return { icon: cd?.icon, label: `${pn} (${cd?.info})` };
+              })(),
+            })
+          ),
+          ...callsData.map((cd) => setNode({ id: cd.Receiver_id.toString() })),
+          ...receivedCalls.map((rc) =>
+            setNode({ id: rc.Caller_id.toString() })
+          ),
         ],
         edges: [
           ...Object.keys(recievedEdges).map((e) => {
@@ -266,7 +297,7 @@ export default function Graph() {
               source: target,
               target: srouce,
               label: `avg: ${avg.toFixed(2)}`,
-              color: 'green'
+              color: "green",
             });
           }),
           ...Object.keys(edges).map((e) => {
@@ -282,7 +313,7 @@ export default function Graph() {
               source: target,
               target: srouce,
               label: `avg: ${avg.toFixed(2)}`,
-              color: recievedEdges[e] ? 'orange':'red' 
+              color: recievedEdges[e] ? "orange" : "red",
             });
           }),
         ],
@@ -294,7 +325,7 @@ export default function Graph() {
     source,
     target,
     label,
-    color
+    color,
   }: {
     source: string;
     target: string;
@@ -308,15 +339,27 @@ export default function Graph() {
         label: {
           value: label || "",
         },
-        ...(color ? {keyshape: {
-          stroke: color,
-          // lineWidth: 4,
-        }}:{})
+        ...(color
+          ? {
+              keyshape: {
+                stroke: color,
+                // lineWidth: 4,
+              },
+            }
+          : {}),
       },
     };
   };
 
-  const setNode = ({ id, label, icon }: { id: string; label?: string; icon?: string | null }) => {
+  const setNode = ({
+    id,
+    label,
+    icon,
+  }: {
+    id: string;
+    label?: string;
+    icon?: string | null;
+  }): IUserNode => {
     return {
       id: id,
       style: {
@@ -324,7 +367,7 @@ export default function Graph() {
           value: label || id,
         },
         icon: {
-          type: 'image',
+          type: "image",
           value: icon ?? `./icons/telephone.png`,
           size: [17, 17],
           clip: {
@@ -335,18 +378,21 @@ export default function Graph() {
     };
   };
 
-  const handleChange = (menuItem: any, menuData: any) => {
-    console.log(menuItem, menuData);
-    console.log(menuData);
+  const handleChange = (menuItem: Item, { id }: { id: string }) => {
     if (menuItem.key === menuKey.expand) {
-      setSelectedCallers([...selectedCallers, menuData.id]);
+      setSelectedCallers([...selectedCallers, id]);
     } else if (menuItem.key === menuKey.shrink) {
-      setSelectedCallers(selectedCallers.filter((sc) => sc !== menuData.id));
+      setSelectedCallers(selectedCallers.filter((sc) => sc !== id));
     } else if (menuItem.key === menuKey.info) {
-      const sources = state.data.edges.filter((e: {source: string, target: string})=>e.target === menuData.id);
-      setIsModalOpen({sources: sources.map((s:{source: string})=>s.source), target: menuData.id})
-    } else if(menuItem.key === menuKey.editIcon){
-      setOpenEditIcon(menuData.id)
+      const sources = state.data.edges.filter(
+        (e: { source: string; target: string }) => e.target === id
+      );
+      setIsModalOpen({
+        sources: sources.map((s: { source: string }) => s.source),
+        target: id,
+      });
+    } else if (menuItem.key === menuKey.editIcon) {
+      setOpenEditIcon(id);
     }
 
     // const count = 4;
@@ -390,9 +436,14 @@ export default function Graph() {
           </Link>
         </Col>
         <Col>
-        <Popconfirm title={'Removing all records'} description={'Do you really want to remove all records?'} onConfirm={removeAllRecords} okButtonProps={{loading: uploading}}>
-          <Button danger>Remove all record</Button>
-        </Popconfirm>
+          <Popconfirm
+            title={"Removing all records"}
+            description={"Do you really want to remove all records?"}
+            onConfirm={removeAllRecords}
+            okButtonProps={{ loading: uploading }}
+          >
+            <Button danger>Remove all record</Button>
+          </Popconfirm>
         </Col>
       </Row>
       <Row gutter={16}>
@@ -403,7 +454,8 @@ export default function Graph() {
                 data={data}
                 layout={{
                   type: "graphin-force",
-                }}>
+                }}
+              >
                 <ContextMenu bindType="node" style={{ width: 100 }}>
                   <Menu
                     bindType="node"
@@ -422,7 +474,8 @@ export default function Graph() {
                         key: menuKey.info,
                         icon: <InfoCircleOutlined />,
                         name: "info",
-                      },{
+                      },
+                      {
                         key: menuKey.editIcon,
                         icon: <EditOutlined />,
                         name: "Edit icon",
@@ -439,134 +492,247 @@ export default function Graph() {
           <div>
             <Card
               title="Callers"
-              bodyStyle={{ overflow: "auto", height: "85vh", minWidth: 415 }}>
-                <div>
-                  <Tabs
+              bodyStyle={{ overflow: "auto", height: "85vh", minWidth: 415 }}
+            >
+              <div>
+                <Tabs
                   type="card"
                   size="small"
                   tabBarStyle={{
                     padding: 0,
-                    margin: 0
+                    margin: 0,
                   }}
                   items={[
-                    {key: 'id',
-                    label: 'ID',
-                    children: <Search allowClear placeholder="Enter ID" onSearch={(val)=>setSearch({id: val, info: ''})}/>
-                  },{
-                    key: 'info',
-                    label: 'Info',
-                    children: <Search allowClear placeholder="Enter info" onSearch={(val)=>setSearch({id: '', info: val})}/>
-                  }
-                  ]}
-                  />
-                <Divider/>
-              {reading ? (
-                <Spin />
-              ) : (
-                <List
-                  itemLayout="horizontal"
-                  dataSource={callers ?? []}
-                  renderItem={(item: CallerType, index) => (
-                    <List.Item>
-                      <div className="flex">
-                      <Checkbox
-                        className=""
-                        checked={
-                          selectedCallers.find((sc) => sc === item.Caller_id)
-                            ? true
-                            : false
-                        }
-                        onChange={({ target: { checked } }) => {
-                          console.log(checked, item);
-                          if (checked) {
-                            setSelectedCallers([
-                              ...selectedCallers,
-                              item.Caller_id,
-                            ]);
-                          } else {
-                            setSelectedCallers(
-                              selectedCallers.filter(
-                                (val) => val !== item.Caller_id
-                              )
-                            );
-                          }
-                        }}>
-                        <List.Item.Meta
-                          className="w-72"
-                          avatar={
-                            <Avatar
-                              src={item.icon ?? `//xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`}
-                            />
-                          }
-                          title={`${item.Caller_id} ${item.info ? `(${item.info})`: ''}`}
-                          description={`Total calls: ${item.count}`}
+                    {
+                      key: "id",
+                      label: "ID",
+                      children: (
+                        <Search
+                          allowClear
+                          placeholder="Enter ID"
+                          onSearch={(val) => setSearch({ id: val, info: "" })}
                         />
-                      </Checkbox>
-                      <Button shape="circle" onClick={()=>{setOpenEditUser({callerId: item.Caller_id, info: item.info ?? ''})}}><EditOutlined /></Button>
-                      </div>
-                    </List.Item>
-                  )}
+                      ),
+                    },
+                    {
+                      key: "info",
+                      label: "Info",
+                      children: (
+                        <Search
+                          allowClear
+                          placeholder="Enter info"
+                          onSearch={(val) => setSearch({ id: "", info: val })}
+                        />
+                      ),
+                    },
+                  ]}
                 />
-              )}
+                <Divider />
+                {reading ? (
+                  <Spin />
+                ) : (
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={callers ?? []}
+                    renderItem={(item: CallerType, index) => (
+                      <List.Item>
+                        <div className="flex">
+                          <Checkbox
+                            className=""
+                            checked={
+                              selectedCallers.find(
+                                (sc) => sc === item.Caller_id
+                              )
+                                ? true
+                                : false
+                            }
+                            onChange={({ target: { checked } }) => {
+                              console.log(checked, item);
+                              if (checked) {
+                                setSelectedCallers([
+                                  ...selectedCallers,
+                                  item.Caller_id,
+                                ]);
+                              } else {
+                                setSelectedCallers(
+                                  selectedCallers.filter(
+                                    (val) => val !== item.Caller_id
+                                  )
+                                );
+                              }
+                            }}
+                          >
+                            <List.Item.Meta
+                              className="w-72"
+                              avatar={
+                                <Avatar
+                                  src={
+                                    item.icon ??
+                                    `//xsgames.co/randomusers/avatar.php?g=pixel&key=${index}`
+                                  }
+                                />
+                              }
+                              title={`${item.Caller_id} ${
+                                item.info ? `(${item.info})` : ""
+                              }`}
+                              description={`Total calls: ${item.count}`}
+                            />
+                          </Checkbox>
+                          <Button
+                            shape="circle"
+                            onClick={() => {
+                              setOpenEditUser({
+                                callerId: item.Caller_id,
+                                info: item.info ?? "",
+                              });
+                            }}
+                          >
+                            <EditOutlined />
+                          </Button>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                )}
               </div>
             </Card>
           </div>
         </Col>
       </Row>
-      <Drawer open={openEditIcon} title="Icons" onClose={()=>setOpenEditIcon(false)} extra={<Button type="primary" onClick={()=>{
-        console.log(customIcon)
-        axios.post('./api/uploadCustomImage', {caller_id: openEditIcon, icon: iconTab === '1'? undefined :customIcon, icon_path: choosenIcon}).then(({data: {success}})=>{
-          if(success){
-            getCallers()
-            setSelectedCallers([])
-            setOpenEditIcon(false)
-            message.success('Contact icon updated successfully');
-          }
-        })
-      }}>Save</Button>}>
-          <div className="text-black">
-            <Tabs defaultActiveKey="1" onChange={(val)=>{setIconTab(val)}} items={[
+      <Drawer
+        open={!!openEditIcon}
+        title="Icons"
+        onClose={() => setOpenEditIcon(false)}
+        extra={
+          <Button
+            type="primary"
+            onClick={() => {
+              console.log(customIcon);
+              axios
+                .post("./api/uploadCustomImage", {
+                  caller_id: openEditIcon,
+                  icon: iconTab === "1" ? undefined : customIcon,
+                  icon_path: choosenIcon,
+                })
+                .then(({ data: { success } }) => {
+                  if (success) {
+                    getCallers();
+                    setSelectedCallers([]);
+                    setOpenEditIcon(false);
+                    message.success("Contact icon updated successfully");
+                  }
+                });
+            }}
+          >
+            Save
+          </Button>
+        }
+      >
+        <div className="text-black">
+          <Tabs
+            defaultActiveKey="1"
+            onChange={(val) => {
+              setIconTab(val);
+            }}
+            items={[
               {
-                key: '1',
-                label: 'Default Icons',
-children: <Row gutter={[16, 24]}>
-{contactIcons.map((icon, index)=> (<Col key={index} className={`gutter-row`} span={6}><Card style={{...{cursor: 'pointer'}, ...(choosenIcon == icon ? {background: '#0090ff1c'}: {})}} hoverable={true} onClick={()=>{setChoosenIcon(icon)}}><img style={{width: 20}} src={icon}/></Card></Col>))}
-</Row>
+                key: "1",
+                label: "Default Icons",
+                children: (
+                  <Row gutter={[16, 24]}>
+                    {contactIcons.map((icon, index) => (
+                      <Col key={index} className={`gutter-row`} span={6}>
+                        <Card
+                          style={{
+                            ...{ cursor: "pointer" },
+                            ...(choosenIcon == icon
+                              ? { background: "#0090ff1c" }
+                              : {}),
+                          }}
+                          hoverable={true}
+                          onClick={() => {
+                            setChoosenIcon(icon);
+                          }}
+                        >
+                          <Image style={{ width: 20 }} src={icon} />
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
+                ),
               },
               {
-                key: '2',
-                label: 'Custom Icons',
-                children: <div><input type="file" onChange={(e)=>{
-                  const file = e.target.files?.[0];
+                key: "2",
+                label: "Custom Icons",
+                children: (
+                  <div>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
 
-                  if (file) {
-                    const reader = new FileReader();
+                        if (file) {
+                          const reader = new FileReader();
 
-                    reader.onloadend = () => {
-                      setCustomIcon(reader.result);
-                    };
+                          reader.onloadend = () => {
+                            setCustomIcon(reader.result?.toString());
+                          };
 
-                    reader.readAsDataURL(file);
-                  }
-                }}/>{customIcon ? <Image className="pt-8" src={customIcon}/>: <></>}</div>
-              }
-            ]}/>
-          </div>
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {customIcon ? (
+                      <Image className="pt-8" src={customIcon} />
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       </Drawer>
-      <Drawer open={!!openEditUser} onClose={()=>setOpenEditUser(null)} extra={<Button type="primary" onClick={()=>{
-        axios.post(`${process.env.NEXT_PUBLIC_API}/contacts/info`, {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
-          if(success){
-            getCallers();
-            setSelectedCallers([])
-            message.success('Contact info updated succesfully')
-            setOpenEditUser(null)
-          }
-        })
-      }}>Save</Button>}>
-          <div className="text-black">
-            <p>Notes</p>
-            <TextArea title="Notes" value={openEditUser?.info} onChange={(e)=>setOpenEditUser({callerId: openEditUser?.callerId as string, info: e.target.value})}/>
-          </div>
+      <Drawer
+        open={!!openEditUser}
+        onClose={() => setOpenEditUser(null)}
+        extra={
+          <Button
+            type="primary"
+            onClick={() => {
+              axios
+                .post(`${process.env.NEXT_PUBLIC_API}/contacts/info`, {
+                  caller_id: openEditUser?.callerId,
+                  info: openEditUser?.info,
+                })
+                .then(({ data: { success } }) => {
+                  if (success) {
+                    getCallers();
+                    setSelectedCallers([]);
+                    message.success("Contact info updated succesfully");
+                    setOpenEditUser(null);
+                  }
+                });
+            }}
+          >
+            Save
+          </Button>
+        }
+      >
+        <div className="text-black">
+          <p>Notes</p>
+          <TextArea
+            title="Notes"
+            value={openEditUser?.info}
+            onChange={(e) =>
+              setOpenEditUser({
+                callerId: openEditUser?.callerId as string,
+                info: e.target.value,
+              })
+            }
+          />
+        </div>
       </Drawer>
       <Drawer open={drawer} onClose={closeDrawer}>
         <div className="flex flex-col">
@@ -580,36 +746,66 @@ children: <Row gutter={[16, 24]}>
             type="primary"
             disabled={!excel}
             loading={uploading}
-            onClick={onUpload}>
+            onClick={onUpload}
+          >
             Submit
           </Button>
         </div>
       </Drawer>
-      <Modal title={'List of call'} open={isModalOpen ? true : false} onCancel={()=>{setIsModalOpen(null)}} width={1000} footer={null}>
-        {isModalOpen && <ListOfCall {...isModalOpen}/>}
+      <Modal
+        title={"List of call"}
+        open={isModalOpen ? true : false}
+        onCancel={() => {
+          setIsModalOpen(null);
+        }}
+        width={1000}
+        footer={null}
+      >
+        {isModalOpen && <ListOfCall {...isModalOpen} />}
       </Modal>
     </div>
   );
 }
 
-const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
+const ListOfCall = ({
+  sources,
+  target,
+}: {
+  sources: string[];
+  target: string;
+}) => {
   const [reading, setReading] = useState(false);
   const [callsData, setCallsData] = useState([]);
-  useEffect(()=>{
+  useEffect(() => {
     setReading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API}/user/calls_by_receiver`, {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
-      if(success){
-        setCallsData(result)
-      }
-    }).catch(err=>{
-      message.error(err.message)
-    }).finally(()=>{
-      setReading(false)
-    })
-  },[sources, target])
-return reading? <Spin/>: callsData && callsData.length > 0 ? <Table dataSource={callsData} columns={Object.keys(callsData[0]).map((k)=> ({
-  title: k,
-  dataIndex: k,
-  key: k,
-}))}/>: <Empty/>
-}
+    axios
+      .get(`${process.env.NEXT_PUBLIC_API}/user/calls_by_receiver`, {
+        params: { sources: sources, target: target },
+      })
+      .then(({ data: { success, result } }) => {
+        if (success) {
+          setCallsData(result);
+        }
+      })
+      .catch((err) => {
+        message.error(err.message);
+      })
+      .finally(() => {
+        setReading(false);
+      });
+  }, [sources, target]);
+  return reading ? (
+    <Spin />
+  ) : callsData && callsData.length > 0 ? (
+    <Table
+      dataSource={callsData}
+      columns={Object.keys(callsData[0]).map((k) => ({
+        title: k,
+        dataIndex: k,
+        key: k,
+      }))}
+    />
+  ) : (
+    <Empty />
+  );
+};
