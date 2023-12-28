@@ -97,7 +97,7 @@ export default function Graph() {
   // const callers: any[] = useMemo(async()=>{
   //   setReading(true);
   //   await axios
-  //     .get("//47.245.90.56:3050/user/callers", {
+  //     .get("${process.env.NEXT_PUBLIC_API}/user/callers", {
   //       params: { from: from.toISOString(), to: to.toISOString(), ...search },
   //     })
   //     .then(({ data: { success, result } }) => {
@@ -122,7 +122,7 @@ export default function Graph() {
   const getCallers = () => {
     setReading(true);
     axios
-      .get("//47.245.90.56:3050/user/callers", {
+      .get(`${process.env.NEXT_PUBLIC_API}/user/callers`, {
         params: { from: from.toISOString(), to: to.toISOString(), ...search },
       })
       .then(({ data: { success, result } }) => {
@@ -140,7 +140,7 @@ export default function Graph() {
 
   useEffect(() => {
     axios
-      .post("//47.245.90.56:3050/user/calls", {
+      .post(`${process.env.NEXT_PUBLIC_API}/user/calls`, {
         ids: selectedCallers,
       })
       .then(({ data: { success, result, recieved_calls } }) => {
@@ -159,7 +159,7 @@ export default function Graph() {
   const onUpload = () => {
     setUploading(true);
     axios
-      .post("//47.245.90.56:3050/user/excel_import", {
+      .post(`${process.env.NEXT_PUBLIC_API}/user/excel_import`, {
         data: excel,
       })
       .then(({ data: { success } }) => {
@@ -182,7 +182,7 @@ export default function Graph() {
   const removeAllRecords = () =>{
     setUploading(true);
     axios
-      .post("//47.245.90.56:3050/user/remove_all_records", {
+      .post(`${process.env.NEXT_PUBLIC_API}/user/remove_all_records`, {
         data: excel,
       })
       .then(({ data: { success, msg } }) => {
@@ -557,7 +557,7 @@ children: <Row gutter={[16, 24]}>
           </div>
       </Drawer>
       <Drawer open={!!openEditUser} onClose={()=>setOpenEditUser(null)} extra={<Button type="primary" onClick={()=>{
-        axios.post('//47.245.90.56:3050/contacts/info', {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
+        axios.post(`${process.env.NEXT_PUBLIC_API}/contacts/info`, {caller_id: openEditUser?.callerId, info: openEditUser?.info}).then(({data: {success}})=>{
           if(success){
             getCallers();
             setSelectedCallers([])
@@ -600,7 +600,7 @@ const ListOfCall = ({sources, target}: {sources: string[], target: string}) =>{
   const [callsData, setCallsData] = useState([]);
   useEffect(()=>{
     setReading(true);
-    axios.get('//47.245.90.56:3050/user/calls_by_receiver', {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
+    axios.get(`${process.env.NEXT_PUBLIC_API}/user/calls_by_receiver`, {params: {sources: sources, target: target}}).then(({data: {success, result}})=>{
       if(success){
         setCallsData(result)
       }
