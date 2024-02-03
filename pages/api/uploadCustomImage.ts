@@ -16,7 +16,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       // Create a unique filename based on timestamp
       const filename = `image_${Date.now()}.${imageExtension}`;
       const filePath = path.join(process.cwd(), "public/customIcons", filename);
-      const fileServerPath = `./customIcons/${filename}`;
+      const fileServerPath = `../customIcons/${filename}`;
 
       // Convert base64 to binary data and write to the file
       const data = icon.replace(/^data:image\/\w+;base64,/, "");
