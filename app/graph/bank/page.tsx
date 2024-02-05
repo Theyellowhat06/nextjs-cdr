@@ -35,7 +35,7 @@ import TextArea from "antd/es/input/TextArea";
 import axios from "axios";
 import { ChangeEvent, useEffect, useState } from "react";
 import * as xlsx from "xlsx";
-import { sortedUniq, sortedUniqBy, uniqBy } from "lodash";
+import { uniqBy } from "lodash";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
