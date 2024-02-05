@@ -33,9 +33,9 @@ import {
 import Search from "antd/es/input/Search";
 import TextArea from "antd/es/input/TextArea";
 import axios from "axios";
+import { uniqBy } from "lodash";
 import { ChangeEvent, useEffect, useState } from "react";
 import * as xlsx from "xlsx";
-import { uniqBy } from "lodash";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
@@ -244,11 +244,11 @@ export default function BankGraph() {
         const json = xlsx.utils.sheet_to_json(worksheet, {
           range: 1,
           defval: null,
-        });
+        }) as { [key: string]: string }[];
         setUploading(false);
         setExcel({
           accountNumber: accountInfo[10].split(" ")[0],
-          statements: json.filter((j: any) => j["Харьцсан данс"]),
+          statements: json.filter((j) => j["Харьцсан данс"]),
         });
       };
       reader.readAsArrayBuffer(e.target.files[0]);
