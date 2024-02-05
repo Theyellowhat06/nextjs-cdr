@@ -44,6 +44,10 @@ type CallType = {
   Caller_id: string;
   Duration_s: number;
   Receiver_id: string;
+  sender_account_number: string;
+  receiver_account_number: string;
+  bank_account_number: string;
+  amount: string;
   icon: string | null;
   info: string | null;
   rc_icon: string | null;
