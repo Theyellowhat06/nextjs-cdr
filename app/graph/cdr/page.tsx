@@ -1,12 +1,13 @@
 "use client";
 
+import { setEdge, setNode } from "@/utils/graphin_helper";
 import {
   EditOutlined,
   ExpandAltOutlined,
   InfoCircleOutlined,
   ShrinkOutlined,
 } from "@ant-design/icons";
-import Graphin, { GraphinData, IUserNode } from "@antv/graphin";
+import Graphin, { GraphinData } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
 import { Item } from "@antv/graphin-components/lib/ContextMenu/Menu";
 import {
@@ -91,18 +92,18 @@ export default function Graph() {
   const [customIcon, setCustomIcon] = useState<string | undefined | null>(null);
   const [choosenIcon, setChoosenIcon] = useState<string | null>(null);
   const contactIcons = [
-    "./icons/arroba.png",
-    "./icons/calendar.png",
-    "./icons/chat-1.png",
-    "./icons/chat.png",
-    "./icons/contract.png",
-    "./icons/house.png",
-    "./icons/id-card.png",
-    "./icons/info.png",
-    "./icons/placeholder.png",
-    "./icons/telephone-1.png",
-    "./icons/telephone.png",
-    "./icons/worldwide.png",
+    "../icons/arroba.png",
+    "../icons/calendar.png",
+    "../icons/chat-1.png",
+    "../icons/chat.png",
+    "../icons/contract.png",
+    "../icons/house.png",
+    "../icons/id-card.png",
+    "../icons/info.png",
+    "../icons/placeholder.png",
+    "../icons/telephone-1.png",
+    "../icons/telephone.png",
+    "../icons/worldwide.png",
   ];
 
   const [search, setSearch] = useState({ id: "", info: "" });
@@ -320,62 +321,62 @@ export default function Graph() {
     });
   };
 
-  const setEdge = ({
-    source,
-    target,
-    label,
-    color,
-  }: {
-    source: string;
-    target: string;
-    label?: string;
-    color?: string;
-  }) => {
-    return {
-      source: source,
-      target: target,
-      style: {
-        label: {
-          value: label || "",
-        },
-        ...(color
-          ? {
-              keyshape: {
-                stroke: color,
-                // lineWidth: 4,
-              },
-            }
-          : {}),
-      },
-    };
-  };
+  // const setEdge = ({
+  //   source,
+  //   target,
+  //   label,
+  //   color,
+  // }: {
+  //   source: string;
+  //   target: string;
+  //   label?: string;
+  //   color?: string;
+  // }) => {
+  //   return {
+  //     source: source,
+  //     target: target,
+  //     style: {
+  //       label: {
+  //         value: label || "",
+  //       },
+  //       ...(color
+  //         ? {
+  //             keyshape: {
+  //               stroke: color,
+  //               // lineWidth: 4,
+  //             },
+  //           }
+  //         : {}),
+  //     },
+  //   };
+  // };
 
-  const setNode = ({
-    id,
-    label,
-    icon,
-  }: {
-    id: string;
-    label?: string;
-    icon?: string | null;
-  }): IUserNode => {
-    return {
-      id: id,
-      style: {
-        label: {
-          value: label || id,
-        },
-        icon: {
-          type: "image",
-          value: icon ?? `../icons/telephone.png`,
-          size: [17, 17],
-          clip: {
-            r: 10,
-          },
-        },
-      },
-    };
-  };
+  // const setNode = ({
+  //   id,
+  //   label,
+  //   icon,
+  // }: {
+  //   id: string;
+  //   label?: string;
+  //   icon?: string | null;
+  // }): IUserNode => {
+  //   return {
+  //     id: id,
+  //     style: {
+  //       label: {
+  //         value: label || id,
+  //       },
+  //       icon: {
+  //         type: "image",
+  //         value: icon ?? `../icons/telephone.png`,
+  //         size: [17, 17],
+  //         clip: {
+  //           r: 10,
+  //         },
+  //       },
+  //     },
+  //   };
+  // };
 
   const handleChange = (menuItem: Item, { id }: { id: string }) => {
     if (menuItem.key === menuKey.expand) {

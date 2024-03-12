@@ -1,12 +1,16 @@
 "use client";
 
+import { setEdge, setNode } from "@/utils/graphin_helper";
 import {
+  BankOutlined,
   EditOutlined,
   ExpandAltOutlined,
+  FileTextOutlined,
   InfoCircleOutlined,
   ShrinkOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import Graphin, { GraphinData, IUserNode } from "@antv/graphin";
+import Graphin, { GraphinData } from "@antv/graphin";
 import { ContextMenu } from "@antv/graphin-components";
 import { Item } from "@antv/graphin-components/lib/ContextMenu/Menu";
 import {
@@ -19,6 +23,7 @@ import {
   Divider,
   Drawer,
   Empty,
+  Form,
   Image,
   Input,
   List,
@@ -68,6 +73,7 @@ enum menuKey {
   shrink = "shrink",
   info = "info",
   editIcon = "editIcon",
+  bankAccount = "bankAccount",
 }
 
 export default function BankGraph() {
@@ -94,45 +100,28 @@ export default function BankGraph() {
     callerId: string;
   } | null>(null);
   const [openEditIcon, setOpenEditIcon] = useState<boolean | string>(false);
+  const [openBankAccountInfo, setOpenBankAccountInfo] = useState<
+    boolean | string
+  >(false);
   const [iconTab, setIconTab] = useState("1");
   const [customIcon, setCustomIcon] = useState<string | undefined | null>(null);
   const [choosenIcon, setChoosenIcon] = useState<string | null>(null);
   const contactIcons = [
-    "./icons/arroba.png",
-    "./icons/calendar.png",
-    "./icons/chat-1.png",
-    "./icons/chat.png",
-    "./icons/contract.png",
-    "./icons/house.png",
-    "./icons/id-card.png",
-    "./icons/info.png",
-    "./icons/placeholder.png",
-    "./icons/telephone-1.png",
-    "./icons/telephone.png",
-    "./icons/worldwide.png",
+    "../icons/arroba.png",
+    "../icons/calendar.png",
+    "../icons/chat-1.png",
+    "../icons/chat.png",
+    "../icons/contract.png",
+    "../icons/house.png",
+    "../icons/id-card.png",
+    "../icons/info.png",
+    "../icons/placeholder.png",
+    "../icons/telephone-1.png",
+    "../icons/telephone.png",
+    "../icons/worldwide.png",
   ];
 
   const [search, setSearch] = useState({ id: "", info: "" });
-  // const callers: any[] = useMemo(async()=>{
-  //   setReading(true);
-  //   await axios
-  //     .get("${process.env.NEXT_PUBLIC_API}/user/callers", {
-  //       params: { from: from.toISOString(), to: to.toISOString(), ...search },
-  //     })
-  //     .then(({ data: { success, result } }) => {
-  //       if(success){
-  //         return result
-  //       }
-  //     })
-  //     .catch((err) => {
-  //       message.error(err.message);
-  //       return []
-  //     })
-  //     .finally(() => {
-  //       setReading(false);
-  //       return []
-  //     });
-  // }, [from, to, search])
 
   useEffect(() => {
     getCallers();
@@ -353,63 +342,6 @@ export default function BankGraph() {
     console.log(state);
   };
 
-  const setEdge = ({
-    source,
-    target,
-    label,
-    color,
-  }: {
-    source: string;
-    target: string;
-    label?: string;
-    color?: string;
-  }) => {
-    return {
-      source: source,
-      target: target,
-      style: {
-        label: {
-          value: label || "",
-        },
-        ...(color
-          ? {
-              keyshape: {
-                stroke: color,
-                // lineWidth: 4,
-              },
-            }
-          : {}),
-      },
-    };
-  };
-
-  const setNode = ({
-    id,
-    label,
-    icon,
-  }: {
-    id: string;
-    label?: string;
-    icon?: string | null;
-  }): IUserNode => {
-    return {
-      id: id,
-      style: {
-        label: {
-          value: label || id,
-        },
-        icon: {
-          type: "image",
-          value: icon ?? `../icons/contract.png`,
-          size: [17, 17],
-          clip: {
-            r: 10,
-          },
-        },
-      },
-    };
-  };
-
   const handleChange = (menuItem: Item, { id }: { id: string }) => {
     if (menuItem.key === menuKey.expand) {
       setSelectedCallers([...selectedCallers, id]);
@@ -425,19 +357,9 @@ export default function BankGraph() {
       });
     } else if (menuItem.key === menuKey.editIcon) {
       setOpenEditIcon(id);
+    } else if (menuItem.key === menuKey.bankAccount) {
+      setOpenBankAccountInfo(id);
     }
-
-    // const count = 4;
-    // const expandData = Utils.mock(count).expand([menuData]).graphin();
-
-    // setState({
-    //   ...state,
-    //   data: {
-    //     // 还需要对Node和Edge去重，这里暂不考虑
-    //     nodes: [...state.data.nodes, ...expandData.nodes],
-    //     edges: [...state.data.edges, ...expandData.edges],
-    //   },
-    // });
   };
   const { data } = state;
   return (
@@ -483,7 +405,7 @@ export default function BankGraph() {
                   type: "graphin-force",
                 }}
               >
-                <ContextMenu bindType="node" style={{ width: 100 }}>
+                <ContextMenu bindType="node" style={{ width: 150 }}>
                   <Menu
                     bindType="node"
                     options={[
@@ -506,6 +428,11 @@ export default function BankGraph() {
                         key: menuKey.editIcon,
                         icon: <EditOutlined />,
                         name: "Edit icon",
+                      },
+                      {
+                        key: menuKey.bankAccount,
+                        icon: <FileTextOutlined />,
+                        name: "Bank account info",
                       },
                     ]}
                     onChange={handleChange}
@@ -790,9 +717,188 @@ export default function BankGraph() {
       >
         {isModalOpen && <ListOfCall {...isModalOpen} />}
       </Modal>
+      {/* <Modal
+        title={`Account number: ${openBankAccountInfo}`}
+        open={!!openBankAccountInfo}
+        onCancel={() => setOpenBankAccountInfo(false)}
+        footer={[
+          <Button key={"cancel"} onClick={() => setOpenBankAccountInfo(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key={"edit"}
+            onClick={() => setOpenBankAccountDrawer(true)}
+            type="primary"
+          >
+            Edit
+          </Button>,
+        ]}
+      > */}
+      {openBankAccountInfo && (
+        <BankAccountInfo
+          accountNumber={openBankAccountInfo}
+          onCancel={() => setOpenBankAccountInfo(false)}
+        />
+      )}
+      {/* </Modal> */}
     </div>
   );
 }
+
+const BankAccountInfo = ({
+  accountNumber,
+  onCancel,
+}: {
+  accountNumber?: string | boolean;
+  onCancel: () => void;
+}) => {
+  const [data, setData] = useState<{
+    first_name: string;
+    last_name: string;
+    account_number: string;
+    register_number: string;
+  } | null>(null);
+  const [openEditBankAccountDrawer, setOpenBankAccountDrawer] =
+    useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  if (!accountNumber) return;
+  useEffect(() => {
+    axios
+      .get(
+        `${process.env.NEXT_PUBLIC_API}/bank/account_profile/${accountNumber}`
+      )
+      .then(({ data: { success, result } }) => {
+        if (success) setData(result);
+      })
+      .catch((error) => {
+        message.error(error.message);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+  console.log(accountNumber, data);
+
+  return (
+    <Modal
+      title={`Account number: ${accountNumber}`}
+      open={!!accountNumber}
+      onCancel={onCancel}
+      footer={[
+        <Button key={"cancel"} onClick={onCancel}>
+          Cancel
+        </Button>,
+        <Button
+          key={"edit"}
+          onClick={() => setOpenBankAccountDrawer(true)}
+          type="primary"
+        >
+          Edit
+        </Button>,
+      ]}
+    >
+      {" "}
+      {loading ? (
+        <Spin />
+      ) : !data ? (
+        <Empty />
+      ) : (
+        <>
+          <div className="space-y-4">
+            <div className="flex space-x-4">
+              <Avatar size="large" icon={<UserOutlined />} />
+              <div>
+                <div className="text-slate-400">First Name</div>
+                <div>{data.first_name}</div>
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <Avatar size="large" icon={<UserOutlined />} />
+              <div>
+                <div className="text-slate-400">Last Name</div>
+                <div>{data.last_name}</div>
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <Avatar size="large" icon={<EditOutlined />} />
+              <div>
+                <div className="text-slate-400">Register number</div>
+                <div>{data.register_number}</div>
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <Avatar size="large" icon={<BankOutlined />} />
+              <div>
+                <div className="text-slate-400">Account number</div>
+                <div>{data.account_number}</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      <Drawer
+        open={!!openEditBankAccountDrawer}
+        onClose={() => {
+          setOpenBankAccountDrawer(false);
+        }}
+        title={`Edit ${accountNumber}`}
+      >
+        <Form
+          initialValues={data ?? {}}
+          onFinish={(val) => {
+            console.log(val);
+            axios
+              .post(
+                `${process.env.NEXT_PUBLIC_API}/bank/account_profile/${accountNumber}`,
+                val
+              )
+              .then(({ data: { success, result } }) => {
+                if (success) {
+                  setData(result);
+                  message.success("Successfuly");
+                }
+              })
+              .catch((error) => {
+                message.error(error.message);
+              })
+              .finally(() => {
+                setLoading(false);
+                setOpenBankAccountDrawer(false);
+              });
+          }}
+        >
+          <Form.Item
+            label="First Name"
+            name={"first_name"}
+            rules={[{ required: true, message: "Please enter first name" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Last Name"
+            name={"last_name"}
+            rules={[{ required: true, message: "Please enter last name" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Register Number"
+            name={"register_number"}
+            rules={[
+              { required: true, message: "Please enter register number" },
+              { min: 10, message: "Min length is 10" },
+            ]}
+          >
+            <Input maxLength={10} />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Submit
+            </Button>
+          </Form.Item>
+        </Form>
+      </Drawer>
+    </Modal>
+  );
+};
 
 const ListOfCall = ({
   sources,
