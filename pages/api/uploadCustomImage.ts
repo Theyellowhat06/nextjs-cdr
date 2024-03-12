@@ -25,7 +25,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
         fs.writeFileSync(filePath, buffer, "binary");
         axios
-          .post("http://localhost:3050/contacts/updateImage", {
+          .post(`${process.env.NEXT_PUBLIC_API}/contacts/updateImage`, {
             icon: fileServerPath,
             caller_id,
           })
@@ -42,7 +42,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     } else if (icon_path) {
       axios
-        .post("http://localhost:3050/contacts/updateImage", {
+        .post(`${process.env.NEXT_PUBLIC_API}/contacts/updateImage`, {
           icon: icon_path,
           caller_id,
         })

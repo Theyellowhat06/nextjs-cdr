@@ -795,7 +795,6 @@ const BankAccountInfo = ({
         </Button>,
       ]}
     >
-      {" "}
       {loading ? (
         <Spin />
       ) : !data ? (
