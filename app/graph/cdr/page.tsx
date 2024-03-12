@@ -1,5 +1,6 @@
 "use client";
 
+import IconPicker from "@/components/icon_picker";
 import { setEdge, setNode } from "@/utils/graphin_helper";
 import {
   EditOutlined,
@@ -20,7 +21,6 @@ import {
   Divider,
   Drawer,
   Empty,
-  Image,
   Input,
   List,
   Modal,
@@ -88,45 +88,8 @@ export default function Graph() {
     callerId: string;
   } | null>(null);
   const [openEditIcon, setOpenEditIcon] = useState<boolean | string>(false);
-  const [iconTab, setIconTab] = useState("1");
-  const [customIcon, setCustomIcon] = useState<string | undefined | null>(null);
-  const [choosenIcon, setChoosenIcon] = useState<string | null>(null);
-  const contactIcons = [
-    "../icons/arroba.png",
-    "../icons/calendar.png",
-    "../icons/chat-1.png",
-    "../icons/chat.png",
-    "../icons/contract.png",
-    "../icons/house.png",
-    "../icons/id-card.png",
-    "../icons/info.png",
-    "../icons/placeholder.png",
-    "../icons/telephone-1.png",
-    "../icons/telephone.png",
-    "../icons/worldwide.png",
-  ];
 
   const [search, setSearch] = useState({ id: "", info: "" });
-  // const callers: any[] = useMemo(async()=>{
-  //   setReading(true);
-  //   await axios
-  //     .get("${process.env.NEXT_PUBLIC_API}/user/callers", {
-  //       params: { from: from.toISOString(), to: to.toISOString(), ...search },
-  //     })
-  //     .then(({ data: { success, result } }) => {
-  //       if(success){
-  //         return result
-  //       }
-  //     })
-  //     .catch((err) => {
-  //       message.error(err.message);
-  //       return []
-  //     })
-  //     .finally(() => {
-  //       setReading(false);
-  //       return []
-  //     });
-  // }, [from, to, search])
 
   useEffect(() => {
     getCallers();
@@ -321,63 +284,6 @@ export default function Graph() {
     });
   };
 
-  // const setEdge = ({
-  //   source,
-  //   target,
-  //   label,
-  //   color,
-  // }: {
-  //   source: string;
-  //   target: string;
-  //   label?: string;
-  //   color?: string;
-  // }) => {
-  //   return {
-  //     source: source,
-  //     target: target,
-  //     style: {
-  //       label: {
-  //         value: label || "",
-  //       },
-  //       ...(color
-  //         ? {
-  //             keyshape: {
-  //               stroke: color,
-  //               // lineWidth: 4,
-  //             },
-  //           }
-  //         : {}),
-  //     },
-  //   };
-  // };
-
-  // const setNode = ({
-  //   id,
-  //   label,
-  //   icon,
-  // }: {
-  //   id: string;
-  //   label?: string;
-  //   icon?: string | null;
-  // }): IUserNode => {
-  //   return {
-  //     id: id,
-  //     style: {
-  //       label: {
-  //         value: label || id,
-  //       },
-  //       icon: {
-  //         type: "image",
-  //         value: icon ?? `../icons/telephone.png`,
-  //         size: [17, 17],
-  //         clip: {
-  //           r: 10,
-  //         },
-  //       },
-  //     },
-  //   };
-  // };
-
   const handleChange = (menuItem: Item, { id }: { id: string }) => {
     if (menuItem.key === menuKey.expand) {
       setSelectedCallers([...selectedCallers, id]);
@@ -394,18 +300,6 @@ export default function Graph() {
     } else if (menuItem.key === menuKey.editIcon) {
       setOpenEditIcon(id);
     }
-
-    // const count = 4;
-    // const expandData = Utils.mock(count).expand([menuData]).graphin();
-
-    // setState({
-    //   ...state,
-    //   data: {
-    //     // 还需要对Node和Edge去重，这里暂不考虑
-    //     nodes: [...state.data.nodes, ...expandData.nodes],
-    //     edges: [...state.data.edges, ...expandData.edges],
-    //   },
-    // });
   };
   const { data } = state;
   return (
@@ -594,101 +488,15 @@ export default function Graph() {
           </div>
         </Col>
       </Row>
-      <Drawer
-        open={!!openEditIcon}
-        title="Icons"
+      <IconPicker
+        callerId={openEditIcon}
+        onUpdate={() => {
+          console.log("working");
+          getCallers();
+          setSelectedCallers([]);
+        }}
         onClose={() => setOpenEditIcon(false)}
-        extra={
-          <Button
-            type="primary"
-            onClick={() => {
-              console.log(customIcon);
-              axios
-                .post("../api/uploadCustomImage", {
-                  caller_id: openEditIcon,
-                  icon: iconTab === "1" ? undefined : customIcon,
-                  icon_path: choosenIcon,
-                })
-                .then(({ data: { success } }) => {
-                  if (success) {
-                    getCallers();
-                    setSelectedCallers([]);
-                    setOpenEditIcon(false);
-                    message.success("Contact icon updated successfully");
-                  }
-                });
-            }}
-          >
-            Save
-          </Button>
-        }
-      >
-        <div className="text-black">
-          <Tabs
-            defaultActiveKey="1"
-            onChange={(val) => {
-              setIconTab(val);
-            }}
-            items={[
-              {
-                key: "1",
-                label: "Default Icons",
-                children: (
-                  <Row gutter={[16, 24]}>
-                    {contactIcons.map((icon, index) => (
-                      <Col key={index} className={`gutter-row`} span={6}>
-                        <Card
-                          style={{
-                            ...{ cursor: "pointer" },
-                            ...(choosenIcon == icon
-                              ? { background: "#0090ff1c" }
-                              : {}),
-                          }}
-                          hoverable={true}
-                          onClick={() => {
-                            setChoosenIcon(icon);
-                          }}
-                        >
-                          <img style={{ width: 20 }} src={icon} />
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
-                ),
-              },
-              {
-                key: "2",
-                label: "Custom Icons",
-                children: (
-                  <div>
-                    <input
-                      type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-
-                        if (file) {
-                          const reader = new FileReader();
-
-                          reader.onloadend = () => {
-                            setCustomIcon(reader.result?.toString());
-                          };
-
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                    {customIcon ? (
-                      <Image className="pt-8" src={customIcon} />
-                    ) : (
-                      <></>
-                    )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </div>
-      </Drawer>
+      />
       <Drawer
         open={!!openEditUser}
         onClose={() => setOpenEditUser(null)}

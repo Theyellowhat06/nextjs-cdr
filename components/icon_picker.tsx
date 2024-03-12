@@ -1,100 +1,115 @@
-// import { Button, Drawer } from "antd";
-// import axios from "axios";
+import { contactIcons } from "@/utils/contact_icons";
+import { Button, Card, Col, Drawer, Row, Tabs, message, Image } from "antd";
+import axios from "axios";
+import { useState } from "react";
 
-// export default function(){
-//     return <Drawer
-//     open={!!openEditIcon}
-//     title="Icons"
-//     onClose={() => setOpenEditIcon(false)}
-//     extra={
-//       <Button
-//         type="primary"
-//         onClick={() => {
-//           console.log(customIcon);
-//           axios
-//             .post("./api/uploadCustomImage", {
-//               caller_id: openEditIcon,
-//               icon: iconTab === "1" ? undefined : customIcon,
-//               icon_path: choosenIcon,
-//             })
-//             .then(({ data: { success } }) => {
-//               if (success) {
-//                 getCallers();
-//                 setSelectedCallers([]);
-//                 setOpenEditIcon(false);
-//                 message.success("Contact icon updated successfully");
-//               }
-//             });
-//         }}
-//       >
-//         Save
-//       </Button>
-//     }
-//   >
-//     <div className="text-black">
-//       <Tabs
-//         defaultActiveKey="1"
-//         onChange={(val) => {
-//           setIconTab(val);
-//         }}
-//         items={[
-//           {
-//             key: "1",
-//             label: "Default Icons",
-//             children: (
-//               <Row gutter={[16, 24]}>
-//                 {contactIcons.map((icon, index) => (
-//                   <Col key={index} className={`gutter-row`} span={6}>
-//                     <Card
-//                       style={{
-//                         ...{ cursor: "pointer" },
-//                         ...(choosenIcon == icon
-//                           ? { background: "#0090ff1c" }
-//                           : {}),
-//                       }}
-//                       hoverable={true}
-//                       onClick={() => {
-//                         setChoosenIcon(icon);
-//                       }}
-//                     >
-//                       <Image style={{ width: 20 }} src={icon} />
-//                     </Card>
-//                   </Col>
-//                 ))}
-//               </Row>
-//             ),
-//           },
-//           {
-//             key: "2",
-//             label: "Custom Icons",
-//             children: (
-//               <div>
-//                 <input
-//                   type="file"
-//                   onChange={(e) => {
-//                     const file = e.target.files?.[0];
+export default function IconPicker({
+  callerId,
+  onClose,
+  onUpdate,
+}: {
+  callerId?: string | boolean;
+  onClose: () => void;
+  onUpdate: () => void;
+}) {
+  const [customIcon, setCustomIcon] = useState<string | undefined>();
+  const [iconTab, setIconTab] = useState("1");
+  const [choosenIcon, setChoosenIcon] = useState<string | undefined>();
 
-//                     if (file) {
-//                       const reader = new FileReader();
+  return (
+    <Drawer
+      open={!!callerId}
+      title="Icons"
+      onClose={onClose}
+      extra={
+        <Button
+          type="primary"
+          onClick={() => {
+            console.log(customIcon);
+            axios
+              .post("../api/uploadCustomImage", {
+                caller_id: callerId,
+                icon: iconTab === "1" ? undefined : customIcon,
+                icon_path: choosenIcon,
+              })
+              .then(({ data: { success } }) => {
+                if (success) {
+                  onUpdate();
+                  onClose();
+                  message.success("Contact icon updated successfully");
+                }
+              });
+          }}
+        >
+          Save
+        </Button>
+      }
+    >
+      <div className="text-black">
+        <Tabs
+          defaultActiveKey="1"
+          onChange={(val) => {
+            setIconTab(val);
+          }}
+          items={[
+            {
+              key: "1",
+              label: "Default Icons",
+              children: (
+                <Row gutter={[16, 24]}>
+                  {contactIcons.map((icon, index) => (
+                    <Col key={index} className={`gutter-row`} span={6}>
+                      <Card
+                        style={{
+                          ...{ cursor: "pointer" },
+                          ...(choosenIcon == icon
+                            ? { background: "#0090ff1c" }
+                            : {}),
+                        }}
+                        hoverable={true}
+                        onClick={() => {
+                          setChoosenIcon(icon);
+                        }}
+                      >
+                        <img style={{ width: 20 }} src={icon} />
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              ),
+            },
+            {
+              key: "2",
+              label: "Custom Icons",
+              children: (
+                <div>
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
 
-//                       reader.onloadend = () => {
-//                         setCustomIcon(reader.result?.toString());
-//                       };
+                      if (file) {
+                        const reader = new FileReader();
 
-//                       reader.readAsDataURL(file);
-//                     }
-//                   }}
-//                 />
-//                 {customIcon ? (
-//                   <Image className="pt-8" src={customIcon} />
-//                 ) : (
-//                   <></>
-//                 )}
-//               </div>
-//             ),
-//           },
-//         ]}
-//       />
-//     </div>
-//   </Drawer>
-// }
+                        reader.onloadend = () => {
+                          setCustomIcon(reader.result?.toString());
+                        };
+
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {customIcon ? (
+                    <Image className="pt-8" src={customIcon} />
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
+    </Drawer>
+  );
+}
