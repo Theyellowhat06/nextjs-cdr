@@ -649,7 +649,7 @@ export default function Graph() {
                             setChoosenIcon(icon);
                           }}
                         >
-                          <Image style={{ width: 20 }} src={icon} />
+                          <img style={{ width: 20 }} src={icon} />
                         </Card>
                       </Col>
                     ))}
