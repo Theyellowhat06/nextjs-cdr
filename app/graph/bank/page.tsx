@@ -54,8 +54,7 @@ type CallType = {
   bank_account_number: string;
   amount: string;
   icon: string | null;
-  info?: string | null;
-  description?: string | null;
+  info: string | null;
   rc_icon: string | null;
   rc_info: string | null;
 };
@@ -65,8 +64,7 @@ type CallerType = {
   bank_account_number: string;
   count: number;
   icon: string | null;
-  info?: string | null;
-  description?: string | null;
+  info: string | null;
 };
 
 enum menuKey {
@@ -99,7 +97,6 @@ export default function BankGraph() {
   } | null>(null);
   const [openEditUser, setOpenEditUser] = useState<{
     info?: string;
-    description?: string;
     callerId: string;
   } | null>(null);
   const [openEditIcon, setOpenEditIcon] = useState<boolean | string>(false);
@@ -274,7 +271,7 @@ export default function BankGraph() {
                 );
                 return {
                   icon: cd?.icon,
-                  label: `${pn} (${cd?.description ?? ""})`,
+                  label: `${pn} (${cd?.info ?? ""})`,
                 };
               })(),
             })
@@ -516,7 +513,7 @@ export default function BankGraph() {
                                 />
                               }
                               title={`${item.bank_account_number} ${
-                                item.description ? `(${item.description})` : ""
+                                item.info ? `(${item.info})` : ""
                               }`}
                               description={`Total statements: ${item.count}`}
                             />
@@ -526,7 +523,7 @@ export default function BankGraph() {
                             onClick={() => {
                               setOpenEditUser({
                                 callerId: item.bank_account_number,
-                                description: item.description ?? "",
+                                info: item.info ?? "",
                               });
                             }}
                           >
@@ -558,9 +555,9 @@ export default function BankGraph() {
             type="primary"
             onClick={() => {
               axios
-                .post(`${process.env.NEXT_PUBLIC_API}/contacts/description`, {
-                  caller_id: openEditUser?.callerId,
-                  description: openEditUser?.description,
+                .post(`${process.env.NEXT_PUBLIC_API}/people/info`, {
+                  account_number: openEditUser?.callerId,
+                  info: openEditUser?.info,
                 })
                 .then(({ data: { success } }) => {
                   if (success) {
@@ -580,11 +577,11 @@ export default function BankGraph() {
           <p>Notes</p>
           <TextArea
             title="Notes"
-            value={openEditUser?.description}
+            value={openEditUser?.info}
             onChange={(e) =>
               setOpenEditUser({
                 callerId: openEditUser?.callerId as string,
-                description: e.target.value,
+                info: e.target.value,
               })
             }
           />
