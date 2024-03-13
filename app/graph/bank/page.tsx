@@ -546,6 +546,7 @@ export default function BankGraph() {
           setSelectedCallers([]);
         }}
         onClose={() => setOpenEditIcon(false)}
+        isBank={true}
       />
       <Drawer
         open={!!openEditUser}

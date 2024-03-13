@@ -6,7 +6,7 @@ import axios from "axios";
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log("aaaa");
   if (req.method === "POST") {
-    const { caller_id, icon, icon_path } = req.body;
+    const { caller_id, icon, icon_path, isBank } = req.body;
     console.log(icon);
     if (icon) {
       res.status(200).json({ success: true });
@@ -25,10 +25,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       try {
         fs.writeFileSync(filePath, buffer, "binary");
         axios
-          .post(`${process.env.NEXT_PUBLIC_API}/contacts/updateImage`, {
-            icon: fileServerPath,
-            caller_id,
-          })
+          .post(
+            `${process.env.NEXT_PUBLIC_API}/${
+              isBank ? "people" : "contacts"
+            }/updateImage`,
+            {
+              icon: fileServerPath,
+              caller_id,
+            }
+          )
           .then(({ status, data }) => {
             return res.status(status).json(data);
           })
@@ -42,10 +47,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     } else if (icon_path) {
       axios
-        .post(`${process.env.NEXT_PUBLIC_API}/contacts/updateImage`, {
-          icon: icon_path,
-          caller_id,
-        })
+        .post(
+          `${process.env.NEXT_PUBLIC_API}/${
+            isBank ? "people" : "contacts"
+          }/updateImage`,
+          {
+            icon: icon_path,
+            caller_id,
+          }
+        )
         .then(({ status, data }) => {
           return res.status(status).json(data);
         })

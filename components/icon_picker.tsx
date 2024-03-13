@@ -7,10 +7,12 @@ export default function IconPicker({
   callerId,
   onClose,
   onUpdate,
+  isBank = false,
 }: {
   callerId?: string | boolean;
   onClose: () => void;
   onUpdate: () => void;
+  isBank?: boolean;
 }) {
   const [customIcon, setCustomIcon] = useState<string | undefined>();
   const [iconTab, setIconTab] = useState("1");
@@ -31,6 +33,7 @@ export default function IconPicker({
                 caller_id: callerId,
                 icon: iconTab === "1" ? undefined : customIcon,
                 icon_path: choosenIcon,
+                isBank: isBank,
               })
               .then(({ data: { success } }) => {
                 if (success) {
