@@ -103,6 +103,7 @@ export default function BankGraph() {
   const [openBankAccountInfo, setOpenBankAccountInfo] = useState<
     boolean | string
   >(false);
+  const [messageApi, contextHolder] = message.useMessage();
 
   const [search, setSearch] = useState({ id: "", info: "" });
 
@@ -130,21 +131,29 @@ export default function BankGraph() {
   };
 
   useEffect(() => {
+    messageApi.open({
+      type: 'loading',
+      content: 'loading',
+      duration: 0
+    })
     axios
       .post(`${process.env.NEXT_PUBLIC_API}/bank/calls`, {
         ids: selectedCallers,
       })
       .then(({ data: { success, result, recieved_calls } }) => {
         if (success) {
-          updateGraphData(result, recieved_calls);
+          updateGraphData(result);
         } else {
-          updateGraphData([], []);
+          updateGraphData([]);
         }
       })
       .catch((err) => {
         message.error(err.message);
       })
-      .finally(() => {});
+      .finally(() => {
+        messageApi.destroy()
+      });
+    // setTimeout(messageApi.destroy, 2500);
   }, [selectedCallers]);
 
   const onUpload = () => {
@@ -233,10 +242,10 @@ export default function BankGraph() {
 
   const updateGraphData = (
     callsData: CallType[],
-    receivedCalls: CallType[]
+    // receivedCalls: CallType[]
   ) => {
     const edges: { [key: string]: number[] } = {};
-    const recievedEdges: { [key: string]: number[] } = {};
+    // const recievedEdges: { [key: string]: number[] } = {};
     const idArray = Array.from(
       new Set(callsData.map((item) => item.sender_account_number))
     );
@@ -247,40 +256,47 @@ export default function BankGraph() {
         Number(c.amount),
       ];
     });
-    receivedCalls.forEach((rc) => {
-      recievedEdges[
-        `${rc.receiver_account_number}-${rc.sender_account_number}`
-      ] = [
-        ...(edges[
-          `${rc.receiver_account_number}-${rc.sender_account_number}`
-        ] || []),
-        Number(rc.amount),
-      ];
-    });
-    console.log("edges:", recievedEdges);
+    // receivedCalls.forEach((rc) => {
+    //   recievedEdges[
+    //     `${rc.receiver_account_number}-${rc.sender_account_number}`
+    //   ] = [
+    //     ...(edges[
+    //       `${rc.receiver_account_number}-${rc.sender_account_number}`
+    //     ] || []),
+    //     Number(rc.amount),
+    //   ];
+    // });
+    console.log("callsData:", uniqBy(
+      callsData.flatMap((rc) => [
+        setNode({ id: rc.sender_account_number.toString() }),
+        setNode({ id: rc.receiver_account_number.toString() }),
+      ]),
+      "id"
+    ));
+    console.log("edges:", edges);
     setState({
       ...state,
       data: {
         nodes: [
-          ...idArray.map((pn) =>
-            setNode({
-              id: pn.toString(),
-              ...(() => {
-                const cd = callsData.find(
-                  (cd) => cd.sender_account_number == pn
-                );
-                return {
-                  icon: cd?.icon,
-                  label: `${pn} (${cd?.info ?? ""})`,
-                };
-              })(),
-            })
-          ),
-          ...callsData.map((cd) =>
-            setNode({ id: cd.receiver_account_number.toString() })
-          ),
+          // ...idArray.map((pn) =>
+          //   setNode({
+          //     id: pn.toString(),
+          //     ...(() => {
+          //       const cd = callsData.find(
+          //         (cd) => cd.sender_account_number == pn
+          //       );
+          //       return {
+          //         icon: cd?.icon,
+          //         label: `${pn} (${cd?.info ?? ""})`,
+          //       };
+          //     })(),
+          //   })
+          // ),
+          // ...callsData.map((cd) =>
+          //   setNode({ id: cd.receiver_account_number.toString() })
+          // ),
           ...uniqBy(
-            receivedCalls.flatMap((rc) => [
+            callsData.flatMap((rc) => [
               setNode({ id: rc.sender_account_number.toString() }),
               setNode({ id: rc.receiver_account_number.toString() }),
             ]),
@@ -305,23 +321,23 @@ export default function BankGraph() {
               color: color,
             });
           }),
-          ...Object.keys(recievedEdges).map((e) => {
-            const [target, srouce] = e.split("-");
-            const max = Math.max(...recievedEdges[e]);
-            const min = Math.min(...recievedEdges[e]);
-            const color = max > 0 ? (min > 0 ? "green" : "orange") : "red";
-            const sum = recievedEdges[e].reduce(
-              (accumulator, currentValue) => accumulator + currentValue,
-              0
-            );
-            const avg = sum / recievedEdges[e].length;
-            return setEdge({
-              source: target,
-              target: srouce,
-              label: `avg: ${avg.toFixed(2)}`,
-              color: color,
-            });
-          }),
+          // ...Object.keys(recievedEdges).map((e) => {
+          //   const [target, srouce] = e.split("-");
+          //   const max = Math.max(...recievedEdges[e]);
+          //   const min = Math.min(...recievedEdges[e]);
+          //   const color = max > 0 ? (min > 0 ? "green" : "orange") : "red";
+          //   const sum = recievedEdges[e].reduce(
+          //     (accumulator, currentValue) => accumulator + currentValue,
+          //     0
+          //   );
+          //   const avg = sum / recievedEdges[e].length;
+          //   return setEdge({
+          //     source: target,
+          //     target: srouce,
+          //     label: `avg: ${avg.toFixed(2)}`,
+          //     color: color,
+          //   });
+          // }),
         ],
       },
     });
@@ -350,6 +366,7 @@ export default function BankGraph() {
   const { data } = state;
   return (
     <div className="bg-white">
+      {contextHolder}
       <Row gutter={16} className="p-4">
         <Col>
           <RangePicker
@@ -388,7 +405,14 @@ export default function BankGraph() {
               <Graphin
                 data={data}
                 layout={{
-                  type: "graphin-force",
+                  type: 'graphin-force',
+                  animation: false,
+                  preset: {
+                    type: 'concentric', // preset layout of graphin-force
+                  },
+                  leafCluster: true, // Whether leaf node clustering is required
+                  nodeClusterBy: 'cluster', // Mapping fields for node clustering
+                  clusterNodeStrength: 20,
                 }}
               >
                 <ContextMenu bindType="node" style={{ width: 150 }}>
