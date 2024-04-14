@@ -140,7 +140,7 @@ export default function BankGraph() {
       .post(`${process.env.NEXT_PUBLIC_API}/bank/calls`, {
         ids: selectedCallers,
       })
-      .then(({ data: { success, result, recieved_calls } }) => {
+      .then(({ data: { success, result } }) => {
         if (success) {
           updateGraphData(result);
         } else {
@@ -246,9 +246,9 @@ export default function BankGraph() {
   ) => {
     const edges: { [key: string]: number[] } = {};
     // const recievedEdges: { [key: string]: number[] } = {};
-    const idArray = Array.from(
-      new Set(callsData.map((item) => item.sender_account_number))
-    );
+    // const idArray = Array.from(
+    //   new Set(callsData.map((item) => item.sender_account_number))
+    // );
     callsData.forEach((c) => {
       edges[`${c.sender_account_number}-${c.receiver_account_number}`] = [
         ...(edges[`${c.sender_account_number}-${c.receiver_account_number}`] ||
