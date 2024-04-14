@@ -182,7 +182,7 @@ export default function BankGraph() {
   const removeAllRecords = () => {
     setUploading(true);
     axios
-      .post(`${process.env.NEXT_PUBLIC_API}/user/remove_all_records`, {
+      .post(`${process.env.NEXT_PUBLIC_API}/bank/remove_all_records`, {
         data: excel,
       })
       .then(({ data: { success, msg } }) => {
