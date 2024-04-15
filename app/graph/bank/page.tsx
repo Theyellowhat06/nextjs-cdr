@@ -406,7 +406,7 @@ export default function BankGraph() {
               <Graphin
                 data={data}
                 layout={{
-                  type: 'graphin-force',
+                  type: 'gForce',
                   animation: false,
                   preset: {
                     type: 'concentric', // preset layout of graphin-force
