@@ -131,6 +131,7 @@ export default function BankGraph() {
   };
 
   useEffect(() => {
+    if(selectedCallers.length < 2) return 
     messageApi.open({
       type: 'loading',
       content: 'loading',
