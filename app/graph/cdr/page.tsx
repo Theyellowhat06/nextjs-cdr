@@ -36,11 +36,12 @@ import TextArea from "antd/es/input/TextArea";
 import axios from "axios";
 import { ChangeEvent, useEffect, useState } from "react";
 import * as xlsx from "xlsx";
+import {  getCallersAction } from "./serverActions";
 
 const { Menu } = ContextMenu;
 const { RangePicker } = DatePicker;
 
-type CallType = {
+export type CallType = {
   Caller_id: string;
   Duration_s: number;
   Receiver_id: string;
@@ -49,7 +50,7 @@ type CallType = {
   rc_icon: string | null;
   rc_info: string | null;
 };
-type CallerType = {
+export type CallerType = {
   Caller_id: string;
   count: number;
   icon: string | null;
@@ -92,26 +93,37 @@ export default function Graph() {
   const [search, setSearch] = useState({ id: "", info: "" });
 
   useEffect(() => {
-    getCallers();
+    getCallers({from, to, search});
   }, [from, to, search]);
 
-  const getCallers = () => {
+  const getCallers = ({from, to, search}: {from: Date, to: Date, search: {id: string, info: string}}) => {
     setReading(true);
-    axios
-      .get(`${process.env.NEXT_PUBLIC_API}/user/callers`, {
-        params: { from: from.toISOString(), to: to.toISOString(), ...search },
-      })
-      .then(({ data: { success, result } }) => {
-        if (success) {
-          setCallers(result);
-        }
-      })
-      .catch((err) => {
-        message.error(err.message);
-      })
-      .finally(() => {
-        setReading(false);
-      });
+    getCallersAction({from, to, search}).then(({success, result}) => {
+          if (success) {
+            setCallers(result);
+          }
+        })
+    .catch((err) => {
+      message.error(err.message);
+    })
+    .finally(() => {
+      setReading(false);
+    });
+    // axios
+    //   .get(`${process.env.NEXT_PUBLIC_API}/user/callers`, {
+    //     params: { from: from.toISOString(), to: to.toISOString(), ...search },
+    //   })
+    //   .then(({ data: { success, result } }) => {
+    //     if (success) {
+    //       setCallers(result);
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     message.error(err.message);
+    //   })
+    //   .finally(() => {
+    //     setReading(false);
+    //   });
   };
 
   useEffect(() => {
@@ -142,7 +154,7 @@ export default function Graph() {
         console.log(data);
         if (success) {
           closeDrawer();
-          getCallers();
+          getCallers({from, to, search});
           message.success("Амжилттай");
         }
       })
@@ -165,7 +177,7 @@ export default function Graph() {
         console.log(data);
         if (success) {
           closeDrawer();
-          getCallers();
+          getCallers({from, to, search});
           setSelectedCallers([]);
           message.success("Амжилттай");
         } else {
@@ -492,7 +504,7 @@ export default function Graph() {
         callerId={openEditIcon}
         onUpdate={() => {
           console.log("working");
-          getCallers();
+          getCallers({from, to, search});
           setSelectedCallers([]);
         }}
         onClose={() => setOpenEditIcon(false)}
@@ -511,7 +523,7 @@ export default function Graph() {
                 })
                 .then(({ data: { success } }) => {
                   if (success) {
-                    getCallers();
+                    getCallers({from, to, search});
                     setSelectedCallers([]);
                     message.success("Contact info updated succesfully");
                     setOpenEditUser(null);
